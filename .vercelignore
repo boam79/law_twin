@@ -1,0 +1,13 @@
+.git
+.next
+node_modules
+.env
+.env*.local
+
+# Scratch artifacts from earlier local prototyping.
+/app.js
+/index.html
+/styles.css
+/lawtwin*.png
+/lawtwin_extracted.txt
+/law_twin/
