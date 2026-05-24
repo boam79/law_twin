@@ -18,7 +18,7 @@ AI 기반 법령 영향·관계 분석 MVP입니다. 현재 구현은 노동법 
 ```bash
 GEMINI_API_KEY=...
 LAW_API_KEY=...
-GEMINI_MODEL=gemini-1.5-flash
+GEMINI_MODEL=gemini-2.0-flash
 ```
 
 ## 로컬 실행
