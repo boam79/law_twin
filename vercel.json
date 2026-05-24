@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "regions": ["icn1"],
+  "functions": {
+    "app/api/analyze/route.js": {
+      "regions": ["icn1"],
+      "maxDuration": 15
+    }
+  }
+}

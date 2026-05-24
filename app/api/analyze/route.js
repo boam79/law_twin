@@ -2,6 +2,10 @@ import { analyzeScenario } from "../../../lib/analyzer";
 import { summarizeWithGemini } from "../../../lib/gemini";
 import { fetchLawSearchResults } from "../../../lib/lawApi";
 
+export const runtime = "nodejs";
+export const preferredRegion = "icn1";
+export const dynamic = "force-dynamic";
+
 export async function POST(request) {
   const body = await request.json();
   const scenario = String(body.scenario || "");
@@ -24,6 +28,9 @@ export async function POST(request) {
       gemini: gemini.enabled,
       lawApi: lawApi.enabled,
     },
+    runtime: {
+      region: process.env.VERCEL_REGION || "local",
+    },
   });
 }
 
@@ -33,6 +40,10 @@ export async function GET() {
     integrations: {
       gemini: Boolean(process.env.GEMINI_API_KEY),
       lawApi: Boolean(process.env.LAW_API_KEY),
+    },
+    runtime: {
+      region: process.env.VERCEL_REGION || "local",
+      preferredRegion,
     },
   });
 }
