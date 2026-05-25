@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { sampleScenarios } from "../lib/lawData";
+import { buildSafeLawGoKrUrl } from "../lib/security.js";
 
 const modes = [
   { id: "impact", label: "영향", hint: "어떤 법령이 걸리는지" },
@@ -288,11 +289,14 @@ export default function Home() {
                           {law.matchedQuery ? ` · ${shortLabel(law.matchedQuery, 16)}` : ""}
                         </div>
                         <p className="evidence">{law.evidence}</p>
-                        {law.detailPath ? (
-                          <a className="law-link" href={`https://www.law.go.kr${law.detailPath}`} target="_blank" rel="noreferrer">
-                            원문 보기
-                          </a>
-                        ) : null}
+                        {(() => {
+                          const lawUrl = buildSafeLawGoKrUrl(law.detailPath);
+                          return lawUrl ? (
+                            <a className="law-link" href={lawUrl} target="_blank" rel="noreferrer noopener">
+                              원문 보기
+                            </a>
+                          ) : null;
+                        })()}
                       </article>
                     ))
                   ) : (

@@ -2,38 +2,42 @@ import { analyzeScenario, hydrateAnalysisWithLiveLaws } from "../../../lib/analy
 import { planLawSearchWithGemini, summarizeWithGemini } from "../../../lib/gemini";
 import { fetchLawSearchBatch } from "../../../lib/lawApi";
 import { canonicalizeSearchQueries } from "../../../lib/lawSearchTerms";
+import {
+  readAnalyzeRequestBody,
+  sanitizeClientErrorMessage,
+  sanitizeIntegrationStatus,
+} from "../../../lib/security.js";
 
 export const runtime = "nodejs";
 export const preferredRegion = "icn1";
 export const dynamic = "force-dynamic";
 
 export async function POST(request) {
-  const body = await request.json();
-  const scenario = String(body.scenario || "");
-  const analysis = analyzeScenario({
-    scenario,
-    sector: body.sector || "auto",
-    region: body.region || "auto",
-    mode: body.mode || "impact",
-  });
+  try {
+    const { scenario, sector, region, mode } = await readAnalyzeRequestBody(request);
+    const analysis = analyzeScenario({ scenario, sector, region, mode });
 
-  const lawSearchPlan = await planLawSearchWithGemini({ scenario, analysis });
-  const searchQueries = mergeQueries(lawSearchPlan.queries, analysis.searchQueries);
-  const lawApi = await fetchLawSearchBatch(searchQueries);
-  const plannedAnalysis = { ...analysis, searchQueries };
-  const hydratedAnalysis = hydrateAnalysisWithLiveLaws(plannedAnalysis, lawApi, body.mode || "impact");
-  const gemini = await summarizeWithGemini({ scenario, analysis: hydratedAnalysis, lawApi });
+    const lawSearchPlan = await planLawSearchWithGemini({ scenario, analysis });
+    const searchQueries = mergeQueries(lawSearchPlan.queries, analysis.searchQueries);
+    const lawApi = await fetchLawSearchBatch(searchQueries);
+    const plannedAnalysis = { ...analysis, searchQueries };
+    const hydratedAnalysis = hydrateAnalysisWithLiveLaws(plannedAnalysis, lawApi, mode);
+    const gemini = await summarizeWithGemini({ scenario, analysis: hydratedAnalysis, lawApi });
 
-  return Response.json({
-    ...hydratedAnalysis,
-    lawApi,
-    lawSearchPlan,
-    gemini,
-    integrations: buildIntegrations({ lawSearchPlan, gemini, lawApi }),
-    runtime: {
-      region: process.env.VERCEL_REGION || "local",
-    },
-  });
+    return Response.json({
+      ...hydratedAnalysis,
+      lawApi,
+      lawSearchPlan,
+      gemini,
+      integrations: buildIntegrations({ lawSearchPlan, gemini, lawApi }),
+      runtime: {
+        region: process.env.VERCEL_REGION || "local",
+      },
+    });
+  } catch (error) {
+    const { message, status } = sanitizeClientErrorMessage(error);
+    return Response.json({ error: message }, { status });
+  }
 }
 
 function buildIntegrations({ lawSearchPlan, gemini, lawApi }) {
@@ -57,10 +61,7 @@ function mergeQueries(primary, fallback) {
 export async function GET() {
   return Response.json({
     ok: true,
-    integrations: {
-      geminiConfigured: Boolean(process.env.GEMINI_API_KEY),
-      lawApiConfigured: Boolean(process.env.LAW_API_KEY),
-    },
+    integrations: sanitizeIntegrationStatus(),
     runtime: {
       region: process.env.VERCEL_REGION || "local",
       preferredRegion,
