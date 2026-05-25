@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { sampleScenarios } from "../lib/lawData";
-import { getHeatmapRowHint } from "../lib/analysisMeta.js";
+import { CHECKLIST_DUE_HINTS, getHeatmapRowHint } from "../lib/analysisMeta.js";
 import { buildSafeLawGoKrUrl } from "../lib/security.js";
 
 const modes = [
@@ -253,15 +253,27 @@ export default function Home() {
               <strong>{analysis.laws[0] ? analysis.laws[0].title : "-"}</strong>
               <p>{analysis.laws[0]?.evidence ?? ""}</p>
             </article>
-            <article className="metric-panel">
-              <span className="metric-label">AI 요약</span>
-              <strong>
-                {analysis.gemini?.text
-                  ? analysis.gemini.text.split("\n")[0]
-                  : analysis.integrations?.geminiConfigured
-                    ? analysis.gemini?.error || "요약 없음 — 아래 히트맵·법령 목록을 참고하세요."
-                    : "Gemini 연결 시 요약이 표시됩니다."}
-              </strong>
+            <article className={`metric-panel ${analysis.gemini?.retryable ? "metric-panel-warn" : ""}`}>
+              <span className="metric-label">AI 요약 (Gemini)</span>
+              {analysis.gemini?.text ? (
+                <>
+                  <strong>{analysis.gemini.text.split("\n")[0]}</strong>
+                  <p className="metric-note">전체 요약은 아래 「2. 법령·대응」 분석 흐름과 함께 보세요.</p>
+                </>
+              ) : analysis.integrations?.geminiConfigured ? (
+                <>
+                  <strong className="metric-warn-title">
+                    {analysis.gemini?.error || "요약 없음 — 체크리스트·법령 목록을 참고하세요."}
+                  </strong>
+                  {analysis.gemini?.retryable ? (
+                    <button className="ghost-button inline-retry" type="button" onClick={() => runAnalysis()} disabled={loading}>
+                      AI 요약 다시 시도
+                    </button>
+                  ) : null}
+                </>
+              ) : (
+                <strong>Gemini API 키가 없어 요약을 건너뜁니다.</strong>
+              )}
             </article>
             <article className="metric-panel">
               <span className="metric-label">법제처 검색어</span>
@@ -307,7 +319,7 @@ export default function Home() {
             <div className="detail-grid">
               <TabIntro
                 title="여기서 할 일"
-                body="체크박스를 하나씩 확인하고, 필요하면 「원문 보기」로 법제처에서 조항을 확인하세요. 법률 자문이 아닌 검토 체크 목록입니다."
+                body="왼쪽 법령의 「원문 보기」로 근거를 확인하고, 오른쪽 체크리스트에서 할 일을 하나씩 체크하세요."
                 wide
               />
               <Panel
@@ -350,8 +362,8 @@ export default function Home() {
               </Panel>
 
               <div className="detail-side">
-                <Panel title="행정 대응 체크리스트" badge={`${analysis?.checklist?.length ?? 0}개`}>
-                  <p className="panel-lead">아래를 순서대로 확인한 뒤, 담당 부서·관할 기관 기준과 대조하세요.</p>
+                <Panel title="검토 체크리스트" badge={`할 일 ${analysis?.checklist?.length ?? 0}개`}>
+                  <ChecklistExplainer description={analysis?.dataQuality?.checklist?.description} />
                   <button className="copy-button" type="button" onClick={copyChecklist}>
                     목록 복사
                   </button>
@@ -361,9 +373,11 @@ export default function Home() {
                         <input type="checkbox" />
                         <span className="check-text">
                           <strong>{task.title}</strong>
-                          <span>{task.evidence}</span>
+                          <span className="check-evidence">근거: {task.evidence}</span>
                         </span>
-                        <span className="due">{task.due}</span>
+                        <span className="due" title={CHECKLIST_DUE_HINTS[task.due] || task.due}>
+                          {task.due}
+                        </span>
                       </label>
                     ))}
                   </div>
@@ -473,6 +487,30 @@ function DataQualityBanner({ quality }) {
       </div>
       {quality.searchQueries.mismatch ? <p className="dq-warn">{quality.searchQueries.note}</p> : null}
     </section>
+  );
+}
+
+function ChecklistExplainer({ description }) {
+  return (
+    <div className="checklist-explainer">
+      <p className="checklist-explainer-title">이 체크리스트는 무엇인가요?</p>
+      <p>{description || "관련 법령마다 미리 정의된 ‘확인할 일’을 모은 목록입니다."}</p>
+      <ol>
+        <li>할 일을 읽고 체크합니다.</li>
+        <li>옆 근거 법령을 「원문 보기」로 열어 조항을 확인합니다.</li>
+        <li>우리 기관·지역·업종에 실제로 해당하는지 담당자와 대조합니다.</li>
+      </ol>
+      <p className="checklist-explainer-note">법률 자문·행정처분 결과가 아닙니다. 빠진 항목은 전문가에게 확인하세요.</p>
+      <div className="due-legend">
+        {Object.entries(CHECKLIST_DUE_HINTS)
+          .slice(0, 4)
+          .map(([due, hint]) => (
+            <span key={due} title={hint}>
+              <em>{due}</em> {hint}
+            </span>
+          ))}
+      </div>
+    </div>
   );
 }
 

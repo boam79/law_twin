@@ -19,6 +19,7 @@ export async function POST(request) {
     const analysis = analyzeScenario({ scenario, sector, region, mode });
 
     const lawSearchPlan = await planLawSearchWithGemini({ scenario, analysis });
+    await pause(900);
     const searchQueries = mergeQueries(lawSearchPlan.queries, analysis.searchQueries);
     const lawApi = await fetchLawSearchBatch(searchQueries);
     const plannedAnalysis = { ...analysis, searchQueries };
@@ -69,6 +70,10 @@ function mergeQueries(primary, fallback) {
 function alignSearchQueriesWithLaws(queries, laws) {
   const titles = (laws || []).map((law) => law.title).filter(Boolean);
   return canonicalizeSearchQueries([...titles, ...(queries || [])]).slice(0, 8);
+}
+
+function pause(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export async function GET() {
