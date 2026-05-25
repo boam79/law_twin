@@ -404,6 +404,13 @@ select {
   background: rgba(29, 122, 100, 0.28);
 }
 
+.integration-note {
+  margin: 8px 0 0;
+  color: #9eb4c2;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
 .relationship-map {
   display: grid;
   grid-template-columns: minmax(220px, 0.9fr) minmax(300px, 1.15fr) minmax(250px, 0.95fr);

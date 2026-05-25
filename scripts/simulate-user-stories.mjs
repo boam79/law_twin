@@ -238,10 +238,12 @@ function parseOptions(args) {
     repeat: Number.parseInt(process.env.LAW_TWIN_SIM_REPEAT || "1", 10),
     limit: Number.parseInt(process.env.LAW_TWIN_SIM_LIMIT || "0", 10),
     forever: false,
+    casualOnly: false,
   };
 
   args.forEach((arg) => {
     if (arg === "--forever") options.forever = true;
+    if (arg === "--casual-only") options.casualOnly = true;
     if (arg.startsWith("--repeat=")) options.repeat = Number.parseInt(arg.slice("--repeat=".length), 10);
     if (arg.startsWith("--limit=")) options.limit = Number.parseInt(arg.slice("--limit=".length), 10);
     if (arg.startsWith("--base-url=")) options.baseUrl = arg.slice("--base-url=".length).replace(/\/+$/u, "");
@@ -254,17 +256,19 @@ function parseOptions(args) {
 
 function buildStories(iteration) {
   const stories = [];
-  for (const domain of domains) {
-    for (const subject of domain.subjects) {
-      for (const action of domain.actions) {
-        for (const detail of domain.details) {
-          for (const region of regions) {
-            for (const mode of modes) {
-              stories.push({
-                domain: domain.name,
-                mode,
-                scenario: `${region} 소재 ${subject}이 ${action}하려고 합니다. ${detail} 관련 법령과 신고, 동의, 고지 절차를 자연어로 찾아줘. 반복 ${iteration}`,
-              });
+  if (!options.casualOnly) {
+    for (const domain of domains) {
+      for (const subject of domain.subjects) {
+        for (const action of domain.actions) {
+          for (const detail of domain.details) {
+            for (const region of regions) {
+              for (const mode of modes) {
+                stories.push({
+                  domain: domain.name,
+                  mode,
+                  scenario: `${region} 소재 ${subject}이 ${action}하려고 합니다. ${detail} 관련 법령과 신고, 동의, 고지 절차를 자연어로 찾아줘. 반복 ${iteration}`,
+                });
+              }
             }
           }
         }

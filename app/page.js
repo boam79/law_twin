@@ -173,8 +173,12 @@ export default function Home() {
           <h2>연동 상태</h2>
           <div className="tag-list">
             <span className={`tag ${analysis?.integrations?.lawApi ? "ok" : ""}`}>법제처 API</span>
-            <span className={`tag ${analysis?.integrations?.gemini ? "ok" : ""}`}>Gemini</span>
+            <span className={`tag ${analysis?.integrations?.gemini ? "ok" : ""}`}>
+              Gemini{analysis?.integrations?.geminiSummary ? " 요약" : analysis?.integrations?.geminiPlan ? " 검색" : ""}
+            </span>
           </div>
+          {analysis?.lawSearchPlan?.error ? <p className="integration-note">검색 계획: {analysis.lawSearchPlan.error}</p> : null}
+          {analysis?.gemini?.error ? <p className="integration-note">AI 요약: {analysis.gemini.error}</p> : null}
         </section>
       </aside>
 
@@ -208,7 +212,13 @@ export default function Home() {
           </article>
           <article className="metric-panel">
             <span className="metric-label">AI 요약</span>
-            <strong>{analysis?.gemini?.text ? analysis.gemini.text.split("\n")[0] : "Gemini 키가 있으면 서버에서 요약합니다."}</strong>
+            <strong>
+              {analysis?.gemini?.text
+                ? analysis.gemini.text.split("\n")[0]
+                : analysis?.integrations?.geminiConfigured
+                  ? analysis?.gemini?.error || "AI 요약을 생성하지 못했습니다. 검색·법령 목록은 계속 확인할 수 있습니다."
+                  : "Gemini 키가 있으면 서버에서 요약합니다."}
+            </strong>
           </article>
         </section>
 

@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start",
     "simulate": "node scripts/simulate-user-stories.mjs",
+    "simulate:casual": "node scripts/simulate-user-stories.mjs --casual-only",
+    "audit:casual": "node scripts/audit-casual-stories.mjs",
     "lint": "next lint"
   },
   "dependencies": {

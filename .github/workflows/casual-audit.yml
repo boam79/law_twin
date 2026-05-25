@@ -1,0 +1,26 @@
+name: Casual story audit
+
+on:
+  push:
+    branches: [main, "cursor/**"]
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 17 * * *"
+
+jobs:
+  casual-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - name: Audit casual stories on production
+        env:
+          LAW_TWIN_BASE_URL: https://law-twin.vercel.app
+          LAW_TWIN_AUDIT_DELAY_MS: "700"
+          LAW_TWIN_AUDIT_STRICT: "1"
+        run: npm run audit:casual
