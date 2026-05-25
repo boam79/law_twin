@@ -78,6 +78,122 @@ const domains = [
   },
 ];
 
+const casualStories = [
+  {
+    domain: "labor",
+    scenario: "알바 월급이랑 주휴수당을 얼마나 줘야 하는지 모르겠어. 야근도 시키면 뭐 봐야 해?",
+    expectedAny: ["근로기준법", "최저임금법"],
+  },
+  {
+    domain: "labor",
+    scenario: "알바비가 밀렸고 사장님이 내일부터 나오지 말라고 했어. 신고 전에 어떤 법을 봐야 해?",
+    expectedAny: ["근로기준법", "최저임금법"],
+  },
+  {
+    domain: "labor",
+    scenario: "직원을 갑자기 내보내도 되는지, 권고사직이면 어떤 절차가 필요한지 알고 싶어.",
+    expectedAny: ["근로기준법"],
+  },
+  {
+    domain: "labor",
+    scenario: "공장에서 사람이 다쳤고 보호구도 제대로 안 줬어. 산재랑 작업중지 기준을 찾아줘.",
+    expectedAny: ["산업안전보건법", "중대재해 처벌 등에 관한 법률"],
+  },
+  {
+    domain: "privacy",
+    scenario: "고객 전화번호랑 생년월일을 받아서 카톡으로 홍보문자 보내도 돼?",
+    expectedAny: ["개인정보 보호법", "정보통신망 이용촉진 및 정보보호 등에 관한 법률"],
+    forbiddenAny: ["의료법"],
+  },
+  {
+    domain: "privacy",
+    scenario: "회원이 탈퇴했는데 주문 기록이랑 주소를 계속 보관해도 되는지 궁금해.",
+    expectedAny: ["개인정보 보호법"],
+    forbiddenAny: ["의료법"],
+  },
+  {
+    domain: "privacy",
+    scenario: "고객 연락처로 광고문자를 보냈는데 수신거부 버튼을 꼭 넣어야 하는지 모르겠어.",
+    expectedAny: ["정보통신망 이용촉진 및 정보보호 등에 관한 법률", "개인정보 보호법"],
+  },
+  {
+    domain: "commerce",
+    scenario: "쇼핑몰 상세페이지에 환불 안 된다고 써도 되는지, 리뷰 광고 문구도 같이 봐줘.",
+    expectedAny: ["전자상거래 등에서의 소비자보호에 관한 법률", "표시ㆍ광고의 공정화에 관한 법률", "약관의 규제에 관한 법률"],
+    forbiddenAny: ["의료법"],
+  },
+  {
+    domain: "commerce",
+    scenario: "구독 서비스 무료체험 끝나면 자동결제하려고 하는데 약관이랑 고지를 어떻게 해야 해?",
+    expectedAny: ["전자상거래 등에서의 소비자보호에 관한 법률", "약관의 규제에 관한 법률"],
+  },
+  {
+    domain: "food",
+    scenario: "작은 식당을 오픈하려는데 배달앱 판매랑 포장판매도 할 거야. 신고가 필요해?",
+    expectedAny: ["식품위생법"],
+  },
+  {
+    domain: "food",
+    scenario: "카페에서 술도 조금 팔고 싶은데 미성년자 출입이나 판매 기준이 걱정돼.",
+    expectedAny: ["식품위생법", "청소년 보호법"],
+  },
+  {
+    domain: "food",
+    scenario: "푸드트럭으로 장사하려고 하는데 영업신고랑 위생교육을 어디까지 해야 하는지 궁금해.",
+    expectedAny: ["식품위생법"],
+  },
+  {
+    domain: "lease",
+    scenario: "집주인이 보증금을 올리겠다고 하는데 세입자가 거절할 수 있는지 궁금해.",
+    expectedAny: ["주택임대차보호법"],
+  },
+  {
+    domain: "lease",
+    scenario: "상가 권리금을 못 받게 한다는데 계약서랑 해지 조건을 봐야 할 것 같아.",
+    expectedAny: ["상가건물 임대차보호법", "민법"],
+  },
+  {
+    domain: "construction",
+    scenario: "매장 앞에 간판 달고 내부 벽을 철거해서 인테리어하려는데 허가가 필요해?",
+    expectedAny: ["건축법", "옥외광고물 등의 관리와 옥외광고산업 진흥에 관한 법률"],
+  },
+  {
+    domain: "construction",
+    scenario: "건물 용도를 바꾸고 일부 해체 공사를 하려는데 신고해야 하는 법을 찾아줘.",
+    expectedAny: ["건축법", "건축물관리법"],
+  },
+  {
+    domain: "environment",
+    scenario: "공장에서 냄새랑 소음 민원이 들어왔고 폐수도 조금 나와. 어떤 법을 봐야 해?",
+    expectedAny: ["대기환경보전법", "물환경보전법", "소음ㆍ진동관리법"],
+  },
+  {
+    domain: "education",
+    scenario: "학원비 환불이랑 어린이 학원차 운행 기준을 같이 확인하고 싶어.",
+    expectedAny: ["학원의 설립ㆍ운영 및 과외교습에 관한 법률", "도로교통법"],
+  },
+  {
+    domain: "education",
+    scenario: "교습소를 열려는데 수강료 게시랑 강사 등록을 어떻게 해야 해?",
+    expectedAny: ["학원의 설립ㆍ운영 및 과외교습에 관한 법률"],
+  },
+  {
+    domain: "healthcare",
+    scenario: "환자 진료기록을 앱에 저장하고 병원 광고도 하려는데 어떤 법을 봐야 할까?",
+    expectedAny: ["의료법", "개인정보 보호법"],
+  },
+  {
+    domain: "fire",
+    scenario: "가게에 소화기랑 화재경보기, 비상구 표시를 어디까지 해야 하는지 모르겠어.",
+    expectedAny: ["소방시설 설치 및 관리에 관한 법률", "화재의 예방 및 안전관리에 관한 법률"],
+  },
+  {
+    domain: "tax",
+    scenario: "프리랜서에게 돈 줄 때 원천세 떼야 하는지, 세금계산서나 현금영수증도 궁금해.",
+    expectedAny: ["소득세법", "부가가치세법"],
+  },
+];
+
 const regions = ["서울", "경기", "부산", "전국"];
 const modes = ["impact", "conflict", "checklist"];
 
@@ -155,6 +271,17 @@ function buildStories(iteration) {
       }
     }
   }
+
+  for (const casualStory of casualStories) {
+    for (const mode of modes) {
+      stories.push({
+        ...casualStory,
+        mode,
+        scenario: `${casualStory.scenario} 반복 ${iteration}`,
+      });
+    }
+  }
+
   return options.limit > 0 ? stories.slice(0, options.limit) : stories;
 }
 
@@ -197,6 +324,24 @@ function validateResult(story, result) {
   if (!body.checklist?.length) failures.push({ type: "emptyChecklist", story, queries });
   if (!body.graph?.nodes?.length || !body.graph?.edges?.length) failures.push({ type: "badGraph", story, graph: body.graph });
   if (containsStaleResults(body)) failures.push({ type: "staleResultHints", story, laws: body.laws?.map((law) => law.title) });
+  if (story.expectedAny?.length && !matchesExpectedLaw(body, story.expectedAny)) {
+    failures.push({
+      type: "missingExpectedLaw",
+      story,
+      expectedAny: story.expectedAny,
+      queries,
+      plannedQueries: body.lawSearchPlan?.queries || [],
+      laws: body.laws?.map((law) => law.title),
+    });
+  }
+  if (story.forbiddenAny?.length && matchesForbiddenLaw(body, story.forbiddenAny)) {
+    failures.push({
+      type: "unexpectedLaw",
+      story,
+      forbiddenAny: story.forbiddenAny,
+      laws: body.laws?.map((law) => law.title),
+    });
+  }
 
   return failures;
 }
@@ -208,6 +353,27 @@ function containsStaleResults(body) {
     laws: body.laws?.map((law) => law.title),
   });
   return staleResultHints.some((hint) => haystack.includes(hint));
+}
+
+function matchesExpectedLaw(body, expectedAny) {
+  const haystack = [
+    ...(body.searchQueries || []),
+    ...(body.lawSearchPlan?.queries || []),
+    ...(body.laws || []).map((law) => law.title),
+  ]
+    .map(normalizeCompact)
+    .join("|");
+
+  return expectedAny.some((lawName) => haystack.includes(normalizeCompact(lawName)));
+}
+
+function matchesForbiddenLaw(body, forbiddenAny) {
+  const haystack = (body.laws || [])
+    .slice(0, 6)
+    .map((law) => normalizeCompact(law.title))
+    .join("|");
+
+  return forbiddenAny.some((lawName) => haystack.includes(normalizeCompact(lawName)));
 }
 
 function normalizeCompact(value) {
