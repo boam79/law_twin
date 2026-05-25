@@ -20,6 +20,7 @@
 
 - 로컬(법제처 키 없음): strict 20/22 — API 미연동 시 `lawApi` 빈 결과.
 - 보안 하드닝 커밋 `86b2621`: `lib/security.js`, `lib/rateLimit.js`, `middleware.js`, route/gemini/lawApi/page 연동 완료. `npm audit` 0, `npm run build` 성공.
+- `main`에 `cursor/executor-law-quality-663c` fast-forward 머지·푸시 완료 (`0ecb507`, 2026-05-25).
 - 프로덕션 배포 후 `LAW_TWIN_BASE_URL=https://law-twin.vercel.app npm run audit:casual` 로 최종 검증 필요.
 
 ## Executor's Feedback or Assistance Requests
