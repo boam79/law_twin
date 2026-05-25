@@ -1,6 +1,6 @@
 import { analyzeScenario } from "../../../lib/analyzer";
 import { summarizeWithGemini } from "../../../lib/gemini";
-import { fetchLawSearchResults } from "../../../lib/lawApi";
+import { fetchLawSearchBatch } from "../../../lib/lawApi";
 
 export const runtime = "nodejs";
 export const preferredRegion = "icn1";
@@ -16,8 +16,7 @@ export async function POST(request) {
     mode: body.mode || "impact",
   });
 
-  const lawQuery = analysis.laws[0]?.title || "근로기준법";
-  const lawApi = await fetchLawSearchResults(lawQuery);
+  const lawApi = await fetchLawSearchBatch(analysis.searchQueries);
   const gemini = await summarizeWithGemini({ scenario, analysis, lawApi });
 
   return Response.json({

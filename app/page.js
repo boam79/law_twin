@@ -11,9 +11,18 @@ const modes = [
 
 const sectors = [
   { id: "auto", label: "자동 판별" },
+  { id: "general", label: "전체 법령" },
   { id: "workplace", label: "노동·인사" },
   { id: "enterprise", label: "기업 준법" },
-  { id: "public", label: "공공기관·지자체" },
+  { id: "public", label: "공공·행정" },
+  { id: "privacy", label: "개인정보" },
+  { id: "realestate", label: "부동산·임대차" },
+  { id: "tax", label: "세무" },
+  { id: "food", label: "식품·위생" },
+  { id: "construction", label: "건축·인허가" },
+  { id: "environment", label: "환경" },
+  { id: "traffic", label: "교통·안전" },
+  { id: "education", label: "교육" },
 ];
 
 const regions = [
@@ -170,7 +179,7 @@ export default function Home() {
       <section className="result-panel">
         <header className="topbar">
           <div>
-            <p className="eyebrow">Prototype v0.2</p>
+            <p className="eyebrow">Prototype v0.3</p>
             <h2>{analysis ? `${analysis.labels.sector} ${analysis.labels.region} 영향 분석` : "분석 대기 중"}</h2>
           </div>
           <div className="status-strip">
@@ -229,14 +238,14 @@ export default function Home() {
               </div>
             </Panel>
 
-            <Panel title="법제처 API 검색" badge={analysis?.lawApi?.enabled ? "연동" : "대기"}>
+            <Panel title="법제처 API 검색" badge={analysis?.lawApi?.items?.length ? `${analysis.lawApi.items.length}건` : analysis?.lawApi?.enabled ? "연동" : "대기"}>
               <div className="law-list">
                 {analysis?.lawApi?.items?.length ? (
                   analysis.lawApi.items.map((law) => (
                     <article className="law-item compact" key={`${law.id}-${law.title}`}>
                       <strong>{law.title || "법령명 없음"}</strong>
                       <div className="law-meta">
-                        {law.agency || "소관부처 미확인"} · 시행 {law.enforcementDate || "미확인"}
+                        {law.agency || "소관부처 미확인"} · 시행 {law.enforcementDate || "미확인"} · 검색어 {law.matchedQuery}
                       </div>
                     </article>
                   ))

@@ -3,6 +3,9 @@ import "./globals.css";
 export const metadata = {
   title: "LawTwin",
   description: "AI 기반 법령 영향·관계 분석 플랫폼",
+  icons: {
+    icon: "/icon.svg",
+  },
 };
 
 export default function RootLayout({ children }) {
