@@ -1,4 +1,4 @@
-import { analyzeScenario } from "../../../lib/analyzer";
+import { analyzeScenario, hydrateAnalysisWithLiveLaws } from "../../../lib/analyzer";
 import { summarizeWithGemini } from "../../../lib/gemini";
 import { fetchLawSearchBatch } from "../../../lib/lawApi";
 
@@ -17,10 +17,11 @@ export async function POST(request) {
   });
 
   const lawApi = await fetchLawSearchBatch(analysis.searchQueries);
-  const gemini = await summarizeWithGemini({ scenario, analysis, lawApi });
+  const hydratedAnalysis = hydrateAnalysisWithLiveLaws(analysis, lawApi, body.mode || "impact");
+  const gemini = await summarizeWithGemini({ scenario, analysis: hydratedAnalysis, lawApi });
 
   return Response.json({
-    ...analysis,
+    ...hydratedAnalysis,
     lawApi,
     gemini,
     integrations: {

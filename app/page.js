@@ -23,6 +23,8 @@ const sectors = [
   { id: "environment", label: "환경" },
   { id: "traffic", label: "교통·안전" },
   { id: "education", label: "교육" },
+  { id: "healthcare", label: "의료" },
+  { id: "fire", label: "소방·시설안전" },
 ];
 
 const regions = [
@@ -222,7 +224,7 @@ export default function Home() {
           </div>
 
           <div className="detail-column">
-            <Panel title="관련 법령" badge="조문 근거">
+            <Panel title="관련 법령" badge={analysis?.laws?.some((law) => law.source === "lawApi") ? "법제처 우선" : "조문 근거"}>
               <div className="law-list">
                 {analysis?.laws.map((law) => (
                   <article className="law-item" key={law.id}>
@@ -230,9 +232,15 @@ export default function Home() {
                       {law.title} {law.article}
                     </strong>
                     <div className="law-meta">
-                      {law.type} · {law.agency} · 매칭 {Math.round(law.score)}점
+                      {law.source === "lawApi" ? "법제처 검색" : law.type} · {law.agency} · 매칭 {Math.round(law.score)}점
+                      {law.matchedQuery ? ` · 검색어 ${law.matchedQuery}` : ""}
                     </div>
                     <div className="evidence">{law.evidence}</div>
+                    {law.detailPath ? (
+                      <a className="law-link" href={`https://www.law.go.kr${law.detailPath}`} target="_blank" rel="noreferrer">
+                        법제처 원문 보기
+                      </a>
+                    ) : null}
                   </article>
                 ))}
               </div>

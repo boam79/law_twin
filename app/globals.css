@@ -485,6 +485,18 @@ select {
   line-height: 1.45;
 }
 
+.law-link {
+  width: fit-content;
+  color: var(--blue);
+  font-size: 12px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.law-link:hover {
+  text-decoration: underline;
+}
+
 .conflict-item {
   padding: 12px;
   border: 1px solid var(--line);
