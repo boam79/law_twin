@@ -109,16 +109,35 @@ export default function Home() {
     await navigator.clipboard.writeText(checklistText);
   }
 
+  function resetApp() {
+    const initialScenario = sampleScenarios[0];
+    setScenario(initialScenario);
+    setSector("auto");
+    setRegion("auto");
+    setMode("impact");
+    setActiveView("relation");
+    setAnalysis(null);
+    setError(null);
+    runAnalysis({
+      scenario: initialScenario,
+      sector: "auto",
+      region: "auto",
+      mode: "impact",
+    });
+  }
+
   return (
     <main className="app-shell">
       <aside className="workspace-panel">
-        <div className="brand-row">
+        <button type="button" className="brand-row brand-button" onClick={resetApp} aria-label="LawTwin 처음으로 초기화">
           <div className="brand-mark">LT</div>
           <div>
             <h1>LawTwin</h1>
             <p>법령 영향·관계 분석</p>
           </div>
-        </div>
+        </button>
+
+        <div className="workspace-body">
 
         <p className="sidebar-guide">
           상황을 적고 <strong>Enter</strong> 또는 <strong>분석 실행</strong>을 누르세요. 줄바꿈은 <strong>Shift+Enter</strong>입니다.
@@ -222,6 +241,12 @@ export default function Home() {
           {analysis?.lawSearchPlan?.error ? <p className="integration-note">검색: {analysis.lawSearchPlan.error}</p> : null}
           {analysis?.gemini?.error ? <p className="integration-note">요약: {analysis.gemini.error}</p> : null}
         </section>
+        </div>
+
+        <footer className="creator-footer">
+          <span className="creator-label">제작</span>
+          <span className="creator-name">Boam79</span>
+        </footer>
       </aside>
 
       <section className="result-panel">

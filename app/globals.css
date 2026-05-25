@@ -69,11 +69,61 @@ button {
   color: #f9fbfc;
 }
 
+.workspace-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+
 .brand-row {
   display: flex;
   align-items: center;
   gap: 14px;
   min-height: 64px;
+}
+
+.brand-button {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.brand-button:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.brand-button:focus-visible {
+  outline: 2px solid #3ad6a6;
+  outline-offset: 2px;
+}
+
+.creator-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 12px;
+  color: #9eb4c2;
+}
+
+.creator-label {
+  font-weight: 600;
+}
+
+.creator-name {
+  font-weight: 800;
+  color: #e8f0f4;
+  letter-spacing: 0.02em;
 }
 
 .brand-mark {
