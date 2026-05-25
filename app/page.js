@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { sampleScenarios } from "../lib/lawData";
+import { getHeatmapRowHint } from "../lib/analysisMeta.js";
 import { buildSafeLawGoKrUrl } from "../lib/security.js";
 
 const modes = [
@@ -72,7 +73,10 @@ export default function Home() {
           mode: next.mode ?? mode,
         }),
       });
-      if (!response.ok) throw new Error(`분석 API ${response.status}`);
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload.error || `분석 API ${response.status}`);
+      }
       setAnalysis(await response.json());
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "분석에 실패했습니다.");
@@ -116,7 +120,9 @@ export default function Home() {
           </div>
         </div>
 
-        <p className="sidebar-guide">상황을 일상 말로 적고 분석을 누르세요. 결과는 오른쪽에서 법령 연관 히트맵으로 먼저 확인할 수 있습니다.</p>
+        <p className="sidebar-guide">
+          상황을 적고 <strong>분석 실행</strong>을 누르세요. 오른쪽 <strong>이렇게 보세요</strong> 안내를 따라가면 됩니다.
+        </p>
 
         <section className="input-section">
           <div className="section-head">
@@ -224,6 +230,10 @@ export default function Home() {
 
         {error ? <div className="error-box">{error}</div> : null}
 
+        {analysis ? <UserActionGuide steps={analysis.nextSteps} activeView={activeView} onGoTo={setActiveView} /> : null}
+
+        {analysis?.dataQuality ? <DataQualityBanner quality={analysis.dataQuality} /> : null}
+
         {analysis ? (
           <section className="summary-grid">
             <article className="metric-panel highlight">
@@ -242,38 +252,60 @@ export default function Home() {
               </strong>
             </article>
             <article className="metric-panel">
-              <span className="metric-label">검색어</span>
+              <span className="metric-label">법제처 검색어</span>
               <div className="query-chips">
                 {analysis.searchQueries?.slice(0, 4).map((query) => (
                   <span key={query}>{shortLabel(query, 18)}</span>
                 ))}
               </div>
+              {analysis.dataQuality?.searchQueries?.mismatch ? (
+                <p className="metric-note warn">표시 법령과 검색어가 다를 수 있어요. 아래 관련 법령을 우선 보세요.</p>
+              ) : null}
             </article>
           </section>
         ) : null}
 
         <nav className="view-tabs" aria-label="결과 보기 전환">
           <button type="button" className={activeView === "relation" ? "active" : ""} onClick={() => setActiveView("relation")}>
-            법령 연관 히트맵
+            <span>1. 법령 연관</span>
+            <small>무엇을 같이 볼지</small>
           </button>
           <button type="button" className={activeView === "detail" ? "active" : ""} onClick={() => setActiveView("detail")}>
-            법령·대응 상세
+            <span>2. 법령·대응</span>
+            <small>체크리스트·원문</small>
           </button>
           <button type="button" className={activeView === "region" ? "active" : ""} onClick={() => setActiveView("region")}>
-            지역·업무 영향
+            <span>3. 지역·업무</span>
+            <small>우선순위 참고</small>
           </button>
         </nav>
 
         <div className="results-body">
           {activeView === "relation" ? (
             <Panel title="법령 간 연관성" badge={mode === "conflict" ? "충돌 중심" : "영향 중심"} wide>
+              <TabIntro
+                title="여기서 할 일"
+                body="색이 진한 칸의 법령 쌍부터 함께 검토하세요. 다음 단계는 「2. 법령·대응」에서 체크리스트를 실행하는 것입니다."
+              />
               <LawRelationHeatmap matrix={lawRelationMatrix} mode={mode} />
             </Panel>
           ) : null}
 
           {activeView === "detail" ? (
             <div className="detail-grid">
-              <Panel title="관련 법령" badge={analysis?.laws?.some((law) => law.source === "lawApi") ? "법제처" : "내부 후보"}>
+              <TabIntro
+                title="여기서 할 일"
+                body="체크박스를 하나씩 확인하고, 필요하면 「원문 보기」로 법제처에서 조항을 확인하세요. 법률 자문이 아닌 검토 체크 목록입니다."
+                wide
+              />
+              <Panel
+                title="관련 법령"
+                badge={
+                  analysis?.dataQuality?.laws?.lawApiVerified
+                    ? `법제처 ${analysis.dataQuality.laws.lawApiVerified}건`
+                    : analysis?.dataQuality?.laws?.label || "내부 후보"
+                }
+              >
                 <div className="law-list">
                   {analysis?.laws.length ? (
                     analysis.laws.map((law, index) => (
@@ -306,7 +338,8 @@ export default function Home() {
               </Panel>
 
               <div className="detail-side">
-                <Panel title="행정 대응" badge="체크리스트">
+                <Panel title="행정 대응 체크리스트" badge={`${analysis?.checklist?.length ?? 0}개`}>
+                  <p className="panel-lead">아래를 순서대로 확인한 뒤, 담당 부서·관할 기관 기준과 대조하세요.</p>
                   <button className="copy-button" type="button" onClick={copyChecklist}>
                     목록 복사
                   </button>
@@ -344,8 +377,13 @@ export default function Home() {
 
           {activeView === "region" ? (
             <div className="region-grid">
-              <Panel title="지역·업무별 영향 강도" badge={analysis?.labels.region ?? "자동"} wide>
-                <RegionImpactHeatmap heatmap={analysis?.heatmap ?? []} />
+              <TabIntro
+                title="여기서 할 일"
+                body="숫자가 큰 칸부터 내부 업무를 배치하세요. 공식 지역 통계나 조례 전문이 아니라, 이번 분석 법령을 바탕으로 한 검토 우선순위 지도입니다."
+                wide
+              />
+              <Panel title="지역·업무별 검토 우선순위" badge={analysis?.dataQuality?.heatmap?.label || "참고용"} wide>
+                <RegionImpactHeatmap heatmap={analysis?.heatmap ?? []} focusRegion={analysis?.labels?.region} />
               </Panel>
               <Panel title="법제처 검색 원본" badge={analysis?.lawApi?.items?.length ? `${analysis.lawApi.items.length}건` : "연동"}>
                 <div className="source-list">
@@ -368,6 +406,70 @@ export default function Home() {
         </div>
       </section>
     </main>
+  );
+}
+
+function UserActionGuide({ steps, activeView, onGoTo }) {
+  if (!steps?.length) return null;
+
+  return (
+    <section className="action-guide" aria-label="분석 결과 이용 안내">
+      <div className="action-guide-head">
+        <h3>이렇게 보세요</h3>
+        <p>법률 자문이 아니라, 검토 순서를 돕는 가이드입니다.</p>
+      </div>
+      <ol className="action-steps">
+        {steps.slice(0, 5).map((step) => (
+          <li key={step.id} className={step.tab && activeView === step.tab ? "current" : ""}>
+            <div className="action-step-body">
+              <strong>{step.title}</strong>
+              <p>{step.detail}</p>
+            </div>
+            {step.tab ? (
+              <button type="button" className="ghost-button" onClick={() => onGoTo(step.tab)}>
+                {activeView === step.tab ? "보는 중" : "열기"}
+              </button>
+            ) : null}
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function DataQualityBanner({ quality }) {
+  return (
+    <section className="data-quality-banner" aria-label="데이터 출처 안내">
+      <div className="dq-item">
+        <span className="dq-label">관련 법령</span>
+        <strong>{quality.laws.label}</strong>
+        {quality.laws.lawApiTotal > 0 ? (
+          <small>
+            법제처 {quality.laws.lawApiTotal}건 검색 · 화면 반영 {quality.laws.lawApiVerified}건
+          </small>
+        ) : (
+          <small>법제처 결과 없음 — 내부 규칙 후보만 표시될 수 있음</small>
+        )}
+      </div>
+      <div className="dq-item">
+        <span className="dq-label">지역·업무 표</span>
+        <strong>{quality.heatmap.label}</strong>
+      </div>
+      <div className="dq-item">
+        <span className="dq-label">체크리스트</span>
+        <strong>{quality.checklist.label}</strong>
+      </div>
+      {quality.searchQueries.mismatch ? <p className="dq-warn">{quality.searchQueries.note}</p> : null}
+    </section>
+  );
+}
+
+function TabIntro({ title, body, wide = false }) {
+  return (
+    <div className={`tab-intro ${wide ? "tab-intro-wide" : ""}`}>
+      <strong>{title}</strong>
+      <p>{body}</p>
+    </div>
   );
 }
 
@@ -462,21 +564,25 @@ function LawMatrixRow({ rowLaw, rowIndex, cells, columnLaws }) {
   );
 }
 
-function RegionImpactHeatmap({ heatmap }) {
+function RegionImpactHeatmap({ heatmap, focusRegion }) {
   const headers = ["업무", "서울", "경기", "부산", "전국"];
   const regionLegend = [
-    { level: "high", label: "높음" },
-    { level: "mid", label: "보통" },
-    { level: "low", label: "낮음" },
+    { level: "high", label: "우선 검토" },
+    { level: "mid", label: "검토 권장" },
+    { level: "low", label: "참고" },
+    { level: "none", label: "해당 약함" },
   ];
 
   if (!heatmap.length) {
-    return <div className="empty-state">지역·업무별 영향 데이터가 없습니다.</div>;
+    return <div className="empty-state">관련 법령이 없어 지역·업무 우선순위를 만들 수 없습니다.</div>;
   }
 
   return (
     <div className="region-heatmap-wrap">
-      <p className="heatmap-intro">업무 유형과 지역 조합별로 검토 강도가 얼마나 높은지 보여 줍니다.</p>
+      <p className="heatmap-intro">
+        칸 숫자는 <strong>연관 법령 수 + 지역 가중</strong>입니다. 공식 지역 통계·조례가 아니라 이번 분석만 반영합니다.
+        {focusRegion ? ` (추론 지역: ${focusRegion})` : ""}
+      </p>
       <div className="heatmap-legend compact" aria-label="영향 강도 범례">
         {regionLegend.map((item) => (
           <div className="legend-item" key={item.level}>
@@ -495,19 +601,35 @@ function RegionImpactHeatmap({ heatmap }) {
           <RegionHeatmapRow row={row} key={row.row} />
         ))}
       </div>
+      <ul className="region-row-notes">
+        {heatmap.map((row) => (
+          <li key={row.row}>
+            <strong>{row.row}</strong> — {getHeatmapRowHint(row.row)}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
 
 function RegionHeatmapRow({ row }) {
+  const levelLabels = { high: "우선", mid: "권장", low: "참고", none: "약함" };
+
   return (
     <>
-      <div className="heatmap-cell header">{row.row}</div>
-      {row.cells.map((cell) => (
-        <div className={`heatmap-cell ${cell.level}`} key={`${row.row}-${cell.col}`} title={`${row.row} · ${cell.col}: ${cell.score}`}>
-          {cell.score}
-        </div>
-      ))}
+      <div className="heatmap-cell header" title={getHeatmapRowHint(row.row)}>
+        {row.row}
+      </div>
+      {row.cells.map((cell) => {
+        const lawsHint = cell.sampleLaws?.length ? ` · ${cell.sampleLaws.join(", ")}` : "";
+        const title = `${row.row} · ${cell.col}: ${levelLabels[cell.level] || cell.level} (연관 ${cell.lawCount ?? cell.score}건)${lawsHint}`;
+        return (
+          <div className={`heatmap-cell ${cell.level}`} key={`${row.row}-${cell.col}`} title={title}>
+            <span className="cell-score">{cell.score > 0 ? cell.score : "·"}</span>
+            {cell.lawCount > 0 ? <span className="cell-sub">{cell.lawCount}법</span> : null}
+          </div>
+        );
+      })}
     </>
   );
 }

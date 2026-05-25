@@ -1,6 +1,7 @@
 import { analyzeScenario, hydrateAnalysisWithLiveLaws } from "../../../lib/analyzer";
 import { planLawSearchWithGemini, summarizeWithGemini } from "../../../lib/gemini";
 import { fetchLawSearchBatch } from "../../../lib/lawApi";
+import { buildDataQuality, buildNextSteps } from "../../../lib/analysisMeta.js";
 import { canonicalizeSearchQueries } from "../../../lib/lawSearchTerms";
 import {
   readAnalyzeRequestBody,
@@ -22,18 +23,25 @@ export async function POST(request) {
     const lawApi = await fetchLawSearchBatch(searchQueries);
     const plannedAnalysis = { ...analysis, searchQueries };
     const hydratedAnalysis = hydrateAnalysisWithLiveLaws(plannedAnalysis, lawApi, mode);
+    hydratedAnalysis.searchQueries = alignSearchQueriesWithLaws(hydratedAnalysis.searchQueries, hydratedAnalysis.laws);
     const gemini = await summarizeWithGemini({ scenario, analysis: hydratedAnalysis, lawApi });
-
-    return Response.json({
+    const payload = {
       ...hydratedAnalysis,
       lawApi,
       lawSearchPlan,
       gemini,
       integrations: buildIntegrations({ lawSearchPlan, gemini, lawApi }),
+      dataQuality: buildDataQuality({ ...hydratedAnalysis, integrations: buildIntegrations({ lawSearchPlan, gemini, lawApi }) }),
+      nextSteps: buildNextSteps(
+        { ...hydratedAnalysis, integrations: buildIntegrations({ lawSearchPlan, gemini, lawApi }) },
+        mode,
+      ),
       runtime: {
         region: process.env.VERCEL_REGION || "local",
       },
-    });
+    };
+
+    return Response.json(payload);
   } catch (error) {
     const { message, status } = sanitizeClientErrorMessage(error);
     return Response.json({ error: message }, { status });
@@ -56,6 +64,11 @@ function buildIntegrations({ lawSearchPlan, gemini, lawApi }) {
 
 function mergeQueries(primary, fallback) {
   return canonicalizeSearchQueries([...(primary || []), ...(fallback || [])]).slice(0, 8);
+}
+
+function alignSearchQueriesWithLaws(queries, laws) {
+  const titles = (laws || []).map((law) => law.title).filter(Boolean);
+  return canonicalizeSearchQueries([...titles, ...(queries || [])]).slice(0, 8);
 }
 
 export async function GET() {
