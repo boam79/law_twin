@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "simulate": "node scripts/simulate-user-stories.mjs",
     "lint": "next lint"
   },
   "dependencies": {
