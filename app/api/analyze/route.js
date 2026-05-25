@@ -1,5 +1,5 @@
 import { analyzeScenario, hydrateAnalysisWithLiveLaws } from "../../../lib/analyzer";
-import { summarizeWithGemini } from "../../../lib/gemini";
+import { planLawSearchWithGemini, summarizeWithGemini } from "../../../lib/gemini";
 import { fetchLawSearchBatch } from "../../../lib/lawApi";
 
 export const runtime = "nodejs";
@@ -16,13 +16,17 @@ export async function POST(request) {
     mode: body.mode || "impact",
   });
 
-  const lawApi = await fetchLawSearchBatch(analysis.searchQueries);
-  const hydratedAnalysis = hydrateAnalysisWithLiveLaws(analysis, lawApi, body.mode || "impact");
+  const lawSearchPlan = await planLawSearchWithGemini({ scenario, analysis });
+  const searchQueries = mergeQueries(lawSearchPlan.queries, analysis.searchQueries);
+  const lawApi = await fetchLawSearchBatch(searchQueries);
+  const plannedAnalysis = { ...analysis, searchQueries };
+  const hydratedAnalysis = hydrateAnalysisWithLiveLaws(plannedAnalysis, lawApi, body.mode || "impact");
   const gemini = await summarizeWithGemini({ scenario, analysis: hydratedAnalysis, lawApi });
 
   return Response.json({
     ...hydratedAnalysis,
     lawApi,
+    lawSearchPlan,
     gemini,
     integrations: {
       gemini: gemini.enabled,
@@ -32,6 +36,10 @@ export async function POST(request) {
       region: process.env.VERCEL_REGION || "local",
     },
   });
+}
+
+function mergeQueries(primary, fallback) {
+  return [...new Set([...(primary || []), ...(fallback || [])].map((query) => String(query || "").trim()).filter(Boolean))].slice(0, 8);
 }
 
 export async function GET() {

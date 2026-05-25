@@ -186,7 +186,7 @@ export default function Home() {
           </div>
           <div className="status-strip">
             <Metric value={analysis?.laws.length ?? 0} label="관련 법령" />
-            <Metric value={analysis?.risk.label ?? "-"} label="리스크" />
+            <Metric value={analysis?.risk.label ?? "-"} label="검토 강도" />
             <Metric value={analysis?.checklist.length ?? 0} label="대응 업무" />
           </div>
         </header>
@@ -228,7 +228,7 @@ export default function Home() {
                       {law.title} {law.article}
                     </strong>
                     <div className="law-meta">
-                      {law.source === "lawApi" ? "법제처 검색" : law.type} · {law.agency} · 매칭 {Math.round(law.score)}점
+                      {law.source === "lawApi" ? "법제처 검색" : law.type} · {law.agency}
                       {law.matchedQuery ? ` · 검색어 ${law.matchedQuery}` : ""}
                     </div>
                     <div className="evidence">{law.evidence}</div>
@@ -367,7 +367,7 @@ function RelationshipMap({ analysis }) {
                   {law.matchedQuery ? ` · ${law.matchedQuery}` : ""}
                 </small>
               </span>
-              <span className="match-score">{Math.round(law.score)}</span>
+              <span className="match-score">{law.source === "lawApi" ? "법제처" : "후보"}</span>
             </li>
           ))}
         </ol>
