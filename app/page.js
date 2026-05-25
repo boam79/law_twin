@@ -121,10 +121,16 @@ export default function Home() {
         </div>
 
         <p className="sidebar-guide">
-          상황을 적고 <strong>분석 실행</strong>을 누르세요. 오른쪽 <strong>이렇게 보세요</strong> 안내를 따라가면 됩니다.
+          상황을 적고 <strong>Enter</strong> 또는 <strong>분석 실행</strong>을 누르세요. 줄바꿈은 <strong>Shift+Enter</strong>입니다.
         </p>
 
-        <section className="input-section">
+        <form
+          className="input-section"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (!loading && scenario.trim()) runAnalysis();
+          }}
+        >
           <div className="section-head">
             <h2>1. 상황 입력</h2>
             <button className="icon-button" type="button" onClick={rotateScenario} aria-label="샘플 예시 바꾸기">
@@ -134,8 +140,14 @@ export default function Home() {
           <textarea
             value={scenario}
             onChange={(event) => setScenario(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key !== "Enter" || event.shiftKey || event.nativeEvent.isComposing) return;
+              event.preventDefault();
+              if (!loading && scenario.trim()) runAnalysis();
+            }}
             placeholder="예: 알바 주휴수당이랑 야근 수당이 헷갈려요. 뭐부터 봐야 할까요?"
             aria-label="분석할 상황"
+            aria-keyshortcuts="Enter"
           />
 
           <div className="field-grid">
@@ -179,10 +191,10 @@ export default function Home() {
             </div>
           </fieldset>
 
-          <button className="primary-button" type="button" onClick={() => runAnalysis()} disabled={loading}>
+          <button className="primary-button" type="submit" disabled={loading || !scenario.trim()}>
             {loading ? "분석 중…" : "3. 분석 실행"}
           </button>
-        </section>
+        </form>
 
         {analysis ? (
           <section className="input-section compact insight-card">
