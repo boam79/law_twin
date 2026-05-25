@@ -213,17 +213,13 @@ export default function Home() {
         </section>
 
         <section className="analysis-layout">
-          <div className="visual-column">
-            <Panel title="법령 관계 네트워크" badge={mode === "impact" ? "영향" : mode === "conflict" ? "충돌" : "대응"}>
-              <LawGraph graph={analysis?.graph} />
-            </Panel>
-
-            <Panel title="지역·업무 영향" badge={analysis?.labels.region ?? "자동"}>
-              <Heatmap heatmap={analysis?.heatmap ?? []} />
+          <div className="map-row">
+            <Panel title="법령 관계 지도" badge={mode === "impact" ? "영향" : mode === "conflict" ? "충돌" : "대응"}>
+              <RelationshipMap analysis={analysis} />
             </Panel>
           </div>
 
-          <div className="detail-column">
+          <div className="main-column">
             <Panel title="관련 법령" badge={analysis?.laws?.some((law) => law.source === "lawApi") ? "법제처 우선" : "조문 근거"}>
               <div className="law-list">
                 {analysis?.laws.map((law) => (
@@ -245,35 +241,9 @@ export default function Home() {
                 ))}
               </div>
             </Panel>
+          </div>
 
-            <Panel title="법제처 API 검색" badge={analysis?.lawApi?.items?.length ? `${analysis.lawApi.items.length}건` : analysis?.lawApi?.enabled ? "연동" : "대기"}>
-              <div className="law-list">
-                {analysis?.lawApi?.items?.length ? (
-                  analysis.lawApi.items.map((law) => (
-                    <article className="law-item compact" key={`${law.id}-${law.title}`}>
-                      <strong>{law.title || "법령명 없음"}</strong>
-                      <div className="law-meta">
-                        {law.agency || "소관부처 미확인"} · 시행 {law.enforcementDate || "미확인"} · 검색어 {law.matchedQuery}
-                      </div>
-                    </article>
-                  ))
-                ) : (
-                  <div className="empty-state">{analysis?.lawApi?.error || "환경변수 연결 후 실시간 검색 결과가 표시됩니다."}</div>
-                )}
-              </div>
-            </Panel>
-
-            <Panel title="충돌 가능성" badge="검토 후보">
-              <div className="conflict-list">
-                {analysis?.conflicts.map((conflict) => (
-                  <article className={`conflict-item ${conflict.level === "high" ? "high" : ""}`} key={conflict.title}>
-                    <strong>{conflict.title}</strong>
-                    <p>{conflict.detail}</p>
-                  </article>
-                ))}
-              </div>
-            </Panel>
-
+          <div className="side-column">
             <Panel title="행정 대응 체크리스트" badge="복사">
               <button className="copy-button" type="button" onClick={copyChecklist}>
                 체크리스트 복사
@@ -289,6 +259,38 @@ export default function Home() {
                     <span className="due">{task.due}</span>
                   </label>
                 ))}
+              </div>
+            </Panel>
+
+            <Panel title="지역·업무 영향" badge={analysis?.labels.region ?? "자동"}>
+              <Heatmap heatmap={analysis?.heatmap ?? []} />
+            </Panel>
+
+            <Panel title="충돌 가능성" badge="검토 후보">
+              <div className="conflict-list">
+                {analysis?.conflicts.map((conflict) => (
+                  <article className={`conflict-item ${conflict.level === "high" ? "high" : ""}`} key={conflict.title}>
+                    <strong>{conflict.title}</strong>
+                    <p>{conflict.detail}</p>
+                  </article>
+                ))}
+              </div>
+            </Panel>
+
+            <Panel title="법제처 원본 검색" badge={analysis?.lawApi?.items?.length ? `${analysis.lawApi.items.length}건` : analysis?.lawApi?.enabled ? "연동" : "대기"}>
+              <div className="source-list">
+                {analysis?.lawApi?.items?.length ? (
+                  analysis.lawApi.items.map((law) => (
+                    <article className="source-item" key={`${law.id}-${law.title}`}>
+                      <strong>{law.title || "법령명 없음"}</strong>
+                      <span>
+                        {law.agency || "소관부처 미확인"} · 시행 {law.enforcementDate || "미확인"} · 검색어 {law.matchedQuery}
+                      </span>
+                    </article>
+                  ))
+                ) : (
+                  <div className="empty-state">{analysis?.lawApi?.error || "환경변수 연결 후 실시간 검색 결과가 표시됩니다."}</div>
+                )}
               </div>
             </Panel>
           </div>
@@ -319,46 +321,79 @@ function Panel({ title, badge, children }) {
   );
 }
 
-function LawGraph({ graph }) {
-  const nodes = graph?.nodes ?? [];
-  const edges = graph?.edges ?? [];
-  const positioned = positionNodes(nodes);
-  const nodeById = new Map(positioned.map((node) => [node.id, node]));
+function RelationshipMap({ analysis }) {
+  if (!analysis) return <div className="empty-state">분석을 실행하면 입력, 법령, 대응 업무의 관계가 표시됩니다.</div>;
+
+  const laws = analysis.laws?.slice(0, 5) ?? [];
+  const tasks = analysis.checklist?.slice(0, 4) ?? [];
+  const agencies = uniqueValues(laws.map((law) => law.agency).filter(Boolean)).slice(0, 4);
+  const queries = analysis.searchQueries?.slice(0, 6) ?? [];
 
   return (
-    <svg className="law-graph" viewBox="0 0 760 420" role="img" aria-label="법령 관계 그래프">
-      {edges.map((edge, index) => {
-        const from = nodeById.get(edge.from);
-        const to = nodeById.get(edge.to);
-        if (!from || !to) return null;
-        return <line key={`${edge.from}-${edge.to}-${index}`} x1={from.x} y1={from.y} x2={to.x} y2={to.y} className={`edge ${edge.type}`} />;
-      })}
-      {positioned.map((node) => (
-        <g key={node.id} className={`node node-${node.group}`} transform={`translate(${node.x} ${node.y})`}>
-          <circle r={node.group === "query" ? 42 : node.group === "law" ? 34 : 30} />
-          <text textAnchor="middle" dy="4">
-            {compactLabel(node.label, node.group === "query" ? 8 : 9)}
-          </text>
-        </g>
-      ))}
-    </svg>
+    <div className="relationship-map">
+      <section className="map-stage input-stage">
+        <div className="map-stage-head">
+          <span className="stage-index">1</span>
+          <strong>입력 상황</strong>
+        </div>
+        <p className="scenario-preview">{analysis.query || "입력 대기"}</p>
+        <div className="map-chip-row">
+          <span>{analysis.labels.sector}</span>
+          <span>{analysis.labels.region}</span>
+          {analysis.labels.topics.slice(0, 3).map((topic) => (
+            <span key={topic}>{topic}</span>
+          ))}
+        </div>
+        <div className="search-terms">
+          {queries.map((query) => (
+            <span key={query}>{query}</span>
+          ))}
+        </div>
+      </section>
+
+      <section className="map-stage law-stage">
+        <div className="map-stage-head">
+          <span className="stage-index">2</span>
+          <strong>우선 검토 법령</strong>
+        </div>
+        <ol className="map-law-list">
+          {laws.map((law, index) => (
+            <li key={law.id}>
+              <span className="law-rank">{index + 1}</span>
+              <span className="law-title-block">
+                <strong>{law.title}</strong>
+                <small>
+                  {law.source === "lawApi" ? "법제처 검색" : law.type} · {law.agency || "소관부처 미확인"}
+                  {law.matchedQuery ? ` · ${law.matchedQuery}` : ""}
+                </small>
+              </span>
+              <span className="match-score">{Math.round(law.score)}</span>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <section className="map-stage action-stage">
+        <div className="map-stage-head">
+          <span className="stage-index">3</span>
+          <strong>다음 확인 업무</strong>
+        </div>
+        <div className="map-task-list">
+          {tasks.map((task) => (
+            <div className="map-task" key={task.title}>
+              <span>{task.due}</span>
+              <strong>{task.title}</strong>
+            </div>
+          ))}
+        </div>
+        <div className="agency-strip">
+          {agencies.map((agency) => (
+            <span key={agency}>{agency}</span>
+          ))}
+        </div>
+      </section>
+    </div>
   );
-}
-
-function positionNodes(nodes) {
-  const laws = nodes.filter((node) => node.group === "law");
-  const tasks = nodes.filter((node) => node.group === "task");
-  const agencies = nodes.filter((node) => node.group === "agency");
-  const region = nodes.find((node) => node.group === "region");
-  const query = nodes.find((node) => node.group === "query");
-
-  return [
-    query ? { ...query, x: 380, y: 210 } : null,
-    ...laws.map((node, index) => ({ ...node, x: 160, y: 70 + index * 70 })),
-    ...tasks.map((node, index) => ({ ...node, x: 600, y: 85 + index * 78 })),
-    ...agencies.map((node, index) => ({ ...node, x: 290 + index * 94, y: 42 })),
-    region ? { ...region, x: 380, y: 370 } : null,
-  ].filter(Boolean);
 }
 
 function Heatmap({ heatmap }) {
@@ -390,6 +425,6 @@ function FragmentRow({ row }) {
   );
 }
 
-function compactLabel(text, maxLength) {
-  return text.length > maxLength ? `${text.slice(0, maxLength - 1)}…` : text;
+function uniqueValues(values) {
+  return [...new Set(values.filter(Boolean))];
 }
