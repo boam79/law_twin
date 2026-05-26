@@ -298,7 +298,7 @@ export default function Home() {
       <section className="result-panel">
         <header className="topbar">
           <div>
-            <p className="eyebrow">Prototype v0.4</p>
+            <p className="eyebrow">v0.5.0</p>
             <h2>{analysis ? `${analysis.labels.sector} · ${analysis.labels.region}` : "분석을 시작해 주세요"}</h2>
             <p className="topbar-sub">
               {analysis ? analysis.risk.priority : "왼쪽에 상황을 입력한 뒤 분석 실행을 누르면 법령 연관 히트맵이 표시됩니다."}
