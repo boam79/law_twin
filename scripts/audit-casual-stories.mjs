@@ -15,6 +15,7 @@ const casualStories = [
   { domain: "labor", scenario: "알바비가 밀렸고 사장님이 내일부터 나오지 말라고 했어. 신고 전에 어떤 법을 봐야 해?", expectedAny: ["근로기준법", "최저임금법"] },
   { domain: "labor", scenario: "직원을 갑자기내도 되는지, 권고사직이면 어떤 절차가 필요한지 알고 싶어.", expectedAny: ["근로기준법"] },
   { domain: "labor", scenario: "공장에서 사람이 다쳤고 보호구도 제대로 안 줬어. 산재랑 작업중지 기준을 찾아줘.", expectedAny: ["산업안전보건법", "중대재해 처벌 등에 관한 법률"] },
+  { domain: "labor", scenario: "5인미만 사업체에서 대표가 근무 중 다쳤을 때", expectedAny: ["산업안전보건법", "산업재해보상보험법", "근로기준법"], forbiddenAny: ["행정절차법"] },
   { domain: "privacy", scenario: "고객 전화번호랑 생년월일을 받아서 카톡으로 홍보문자내도 돼?", expectedAny: ["개인정보 보호법", "정보통신망 이용촉진 및 정보보호 등에 관한 법률"], forbiddenAny: ["의료법"] },
   { domain: "privacy", scenario: "회원이 탈퇴했는데 주문 기록이랑 주소를 계속 보관해도 되는지 궁금해.", expectedAny: ["개인정보 보호법"], forbiddenAny: ["의료법"] },
   { domain: "privacy", scenario: "고객 연락처로 광고문자를 보냈는데 수신거부 버튼을 꼭 넣어야 하는지 모르겠어.", expectedAny: ["정보통신망 이용촉진 및 정보보호 등에 관한 법률", "개인정보 보호법"] },

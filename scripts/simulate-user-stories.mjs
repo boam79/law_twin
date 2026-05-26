@@ -100,6 +100,12 @@ const casualStories = [
     expectedAny: ["산업안전보건법", "중대재해 처벌 등에 관한 법률"],
   },
   {
+    domain: "labor",
+    scenario: "5인미만 사업체에서 대표가 근무 중 다쳤을 때",
+    expectedAny: ["산업안전보건법", "산업재해보상보험법", "근로기준법"],
+    forbiddenAny: ["행정절차법"],
+  },
+  {
     domain: "privacy",
     scenario: "고객 전화번호랑 생년월일을 받아서 카톡으로 홍보문자 보내도 돼?",
     expectedAny: ["개인정보 보호법", "정보통신망 이용촉진 및 정보보호 등에 관한 법률"],
