@@ -81,9 +81,10 @@ function buildInternalLawSearchPlan(analysis) {
 function buildWarnings(gemini) {
   const warnings = [];
   if (gemini?.status === 429 || gemini?.retryable) {
+    const tried = gemini?.modelsTried?.map((id) => id.replace("gemini-", "")).join(", ") || "flash 계열";
     warnings.push({
       code: "gemini_rate_limit",
-      message: "Gemini 무료 한도(분당 약 5회)에 걸렸습니다. 1~2분 기다린 뒤 다시 「분석 실행」을 눌러 주세요.",
+      message: `무료 Gemini 모델(${tried}) 한도에 모두 걸렸습니다. 1~2분 기다린 뒤 다시 「분석 실행」을 눌러 주세요.`,
       retryAfterSec: 75,
     });
   }

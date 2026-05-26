@@ -331,6 +331,12 @@ export default function Home() {
               {analysis.gemini?.text ? (
                 <>
                   <strong>{analysis.gemini.text.split("\n")[0]}</strong>
+                  {analysis.gemini.modelLabel ? (
+                    <p className="metric-note">요약 모델: {analysis.gemini.modelLabel}</p>
+                  ) : null}
+                  {analysis.gemini.fallbackNote ? (
+                    <p className="metric-note warn">{analysis.gemini.fallbackNote}</p>
+                  ) : null}
                   <p className="metric-note">전체 요약은 아래 「2. 법령·대응」 분석 흐름과 함께 보세요.</p>
                 </>
               ) : analysis.integrations?.geminiConfigured ? (
