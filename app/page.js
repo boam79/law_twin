@@ -45,7 +45,7 @@ const relationLegend = [
 ];
 
 export default function Home() {
-  const [scenario, setScenario] = useState(sampleScenarios[0]);
+  const [scenario, setScenario] = useState("");
   const [sector, setSector] = useState("auto");
   const [region, setRegion] = useState("auto");
   const [mode, setMode] = useState("impact");
@@ -72,11 +72,6 @@ export default function Home() {
     return () => clearInterval(timer);
   }, [cooldownUntil]);
 
-  useEffect(() => {
-    runAnalysis();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   function applyRateLimitCooldown(payload) {
     const warning = payload?.warnings?.find((item) => item.code === "gemini_rate_limit");
     if (warning?.retryAfterSec) {
@@ -85,6 +80,12 @@ export default function Home() {
   }
 
   async function runAnalysis(next = {}) {
+    const nextScenario = String(next.scenario ?? scenario).trim();
+    if (!nextScenario) {
+      setError("상황 설명을 입력한 뒤 분석 실행을 눌러 주세요.");
+      return;
+    }
+
     if (cooldownUntil > Date.now()) {
       setError(`Gemini 요청 한도입니다. 약 ${cooldownSecondsLeft}초 후에 다시 시도해 주세요.`);
       return;
@@ -97,7 +98,7 @@ export default function Home() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          scenario: next.scenario ?? scenario,
+          scenario: nextScenario,
           sector: next.sector ?? sector,
           region: next.region ?? region,
           mode: next.mode ?? mode,
@@ -118,14 +119,18 @@ export default function Home() {
   }
 
   function rotateScenario() {
-    const current = sampleScenarios.indexOf(scenario);
-    const nextScenario = sampleScenarios[(current + 1 + sampleScenarios.length) % sampleScenarios.length];
+    const currentIndex = sampleScenarios.indexOf(scenario);
+    const nextScenario =
+      currentIndex === -1
+        ? sampleScenarios[0]
+        : sampleScenarios[(currentIndex + 1) % sampleScenarios.length];
     setScenario(nextScenario);
     runAnalysis({ scenario: nextScenario });
   }
 
   function changeMode(nextMode) {
     setMode(nextMode);
+    if (!scenario.trim()) return;
     runAnalysis({ mode: nextMode });
   }
 
@@ -142,8 +147,7 @@ export default function Home() {
   }
 
   function resetApp() {
-    const initialScenario = sampleScenarios[0];
-    setScenario(initialScenario);
+    setScenario("");
     setSector("auto");
     setRegion("auto");
     setMode("impact");
@@ -151,12 +155,6 @@ export default function Home() {
     setAnalysis(null);
     setError(null);
     setCooldownUntil(0);
-    runAnalysis({
-      scenario: initialScenario,
-      sector: "auto",
-      region: "auto",
-      mode: "impact",
-    });
   }
 
   return (
@@ -185,7 +183,7 @@ export default function Home() {
         >
           <div className="section-head">
             <h2>1. 상황 입력</h2>
-            <button className="icon-button" type="button" onClick={rotateScenario} aria-label="샘플 예시 바꾸기">
+            <button className="icon-button" type="button" onClick={rotateScenario} aria-label="예시 상황 불러오기" title="예시 상황">
               ↺
             </button>
           </div>
@@ -298,7 +296,7 @@ export default function Home() {
       <section className="result-panel">
         <header className="topbar">
           <div>
-            <p className="eyebrow">v0.5.0</p>
+            <p className="eyebrow">v0.5.1</p>
             <h2>{analysis ? `${analysis.labels.sector} · ${analysis.labels.region}` : "분석을 시작해 주세요"}</h2>
             <p className="topbar-sub">
               {analysis ? analysis.risk.priority : "왼쪽에 상황을 입력한 뒤 분석 실행을 누르면 법령 연관 히트맵이 표시됩니다."}
@@ -337,6 +335,9 @@ export default function Home() {
                   {analysis.gemini.fallbackNote ? (
                     <p className="metric-note warn">{analysis.gemini.fallbackNote}</p>
                   ) : null}
+                  {analysis.gemini.modelsTriedLabel ? (
+                    <p className="metric-note">시도 순서: {analysis.gemini.modelsTriedLabel}</p>
+                  ) : null}
                   <p className="metric-note">전체 요약은 아래 「2. 법령·대응」 분석 흐름과 함께 보세요.</p>
                 </>
               ) : analysis.integrations?.geminiConfigured ? (
@@ -344,6 +345,9 @@ export default function Home() {
                   <strong className="metric-warn-title">
                     {analysis.gemini?.error || "요약 없음 — 체크리스트·법령 목록을 참고하세요."}
                   </strong>
+                  {analysis.gemini?.modelsTriedLabel ? (
+                    <p className="metric-note">시도 순서: {analysis.gemini.modelsTriedLabel}</p>
+                  ) : null}
                   {analysis.gemini?.retryable ? (
                     <button className="ghost-button inline-retry" type="button" onClick={() => runAnalysis()} disabled={loading}>
                       AI 요약 다시 시도
