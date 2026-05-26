@@ -1434,6 +1434,129 @@ select {
   text-align: center;
 }
 
+.plain-summary {
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, #ffffff 0%, #f6fbff 100%);
+}
+
+.plain-summary-head h3 {
+  margin: 0 0 4px;
+  font-size: 16px;
+}
+
+.plain-summary-head p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.plain-summary-grid {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.plain-card {
+  padding: 12px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.plain-label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.plain-card strong {
+  display: block;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.plain-list,
+.plain-steps {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.plain-list li + li,
+.plain-steps li + li {
+  margin-top: 6px;
+}
+
+.plain-cta {
+  margin-top: 10px;
+}
+
+.check-item-q {
+  padding: 0;
+  overflow: hidden;
+}
+
+.check-summary {
+  list-style: none;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+  min-height: 48px;
+  padding: 11px 12px;
+  cursor: pointer;
+}
+
+.check-item-q[open] .check-summary {
+  background: #f3f8ff;
+}
+
+.check-item-q summary::-webkit-details-marker {
+  display: none;
+}
+
+.check-detail {
+  padding: 0 12px 12px;
+  border-top: 1px solid var(--line);
+  background: #f8fbff;
+}
+
+.check-detail-note {
+  margin: 10px 0 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.check-detail-title {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.check-detail ul {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.check-detail li + li {
+  margin-top: 4px;
+}
+
 .heatmap {
   display: grid;
   grid-template-columns: minmax(98px, 1.25fr) repeat(4, minmax(42px, 0.75fr));
@@ -1502,6 +1625,10 @@ select {
   .summary-grid,
   .detail-grid,
   .region-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .plain-summary-grid {
     grid-template-columns: 1fr;
   }
 

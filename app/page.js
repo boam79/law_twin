@@ -317,6 +317,8 @@ export default function Home() {
 
         {analysis?.dataQuality ? <DataQualityBanner quality={analysis.dataQuality} /> : null}
 
+        {analysis ? <PlainLanguageSummary analysis={analysis} onGoTo={setActiveView} /> : null}
+
         {analysis ? (
           <section className="summary-grid">
             <article className="metric-panel highlight">
@@ -452,16 +454,7 @@ export default function Home() {
                   </button>
                   <div className="checklist">
                     {analysis?.checklist.map((task) => (
-                      <label className="check-item" key={task.title}>
-                        <input type="checkbox" />
-                        <span className="check-text">
-                          <strong>{task.title}</strong>
-                          <span className="check-evidence">근거: {task.evidence}</span>
-                        </span>
-                        <span className="due" title={CHECKLIST_DUE_HINTS[task.due] || task.due}>
-                          {task.due}
-                        </span>
-                      </label>
+                      <QuestionChecklistItem key={task.title} task={task} />
                     ))}
                   </div>
                 </Panel>
@@ -609,6 +602,85 @@ function ChecklistExplainer({ description }) {
           ))}
       </div>
     </div>
+  );
+}
+
+function PlainLanguageSummary({ analysis, onGoTo }) {
+  const summary = buildPlainLanguageSummary(analysis);
+  if (!summary) return null;
+
+  return (
+    <section className="plain-summary" aria-label="쉬운 설명">
+      <div className="plain-summary-head">
+        <h3>쉽게 설명하면</h3>
+        <p>법률 자문이 아니라, 지금 할 일을 이해하기 쉽게 풀어쓴 안내입니다.</p>
+      </div>
+
+      <div className="plain-summary-grid">
+        <article className="plain-card">
+          <span className="plain-label">한 줄 결론</span>
+          <strong>{summary.conclusion}</strong>
+        </article>
+        <article className="plain-card">
+          <span className="plain-label">왜 이렇게 나왔나요?</span>
+          <ul className="plain-list">
+            {summary.because.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </article>
+        <article className="plain-card">
+          <span className="plain-label">그래서 지금 뭘 하면 되나요?</span>
+          <ol className="plain-steps">
+            {summary.actions.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ol>
+          <div className="plain-cta">
+            <button type="button" className="ghost-button" onClick={() => onGoTo("detail")}>
+              체크리스트로 가기
+            </button>
+          </div>
+        </article>
+      </div>
+    </section>
+  );
+}
+
+function QuestionChecklistItem({ task }) {
+  const question = taskTitleToQuestion(task.title);
+  const needed = taskTitleToNeededInfo(task.title);
+
+  return (
+    <details className="check-item check-item-q" key={`q-${task.title}`}>
+      <summary className="check-summary">
+        <input type="checkbox" aria-label={`${question} 체크`} onClick={(e) => e.stopPropagation()} />
+        <span className="check-text">
+          <strong>{question}</strong>
+          <span className="check-evidence">근거: {task.evidence}</span>
+        </span>
+        <span className="due" title={CHECKLIST_DUE_HINTS[task.due] || task.due}>
+          {task.due}
+        </span>
+      </summary>
+      <div className="check-detail">
+        <p className="check-detail-note">
+          원래 항목: <strong>{task.title}</strong>
+        </p>
+        {needed.length ? (
+          <>
+            <p className="check-detail-title">이걸 확인하려면 보통 이런 정보가 필요해요</p>
+            <ul>
+              {needed.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </>
+        ) : (
+          <p className="check-detail-title">원문 보기에서 해당 조항의 적용 범위를 확인해 주세요.</p>
+        )}
+      </div>
+    </details>
   );
 }
 
@@ -860,4 +932,57 @@ function shortLabel(value, max = 16) {
   const text = String(value || "").trim();
   if (text.length <= max) return text;
   return `${text.slice(0, max)}…`;
+}
+
+function buildPlainLanguageSummary(analysis) {
+  if (!analysis) return null;
+  const sector = analysis.labels?.sector || "해당";
+  const region = analysis.labels?.region || "전국";
+  const risk = analysis.risk?.priority || "";
+
+  const topLaws = (analysis.laws || []).slice(0, 2);
+  const because = [
+    `입력 내용에서 핵심 키워드를 추출해 ${sector} 관련 법령 후보를 먼저 올렸어요.`,
+    ...topLaws.map((law) => `관련 법령 후보: ${law.title}${law.article ? `(${law.article})` : ""}`),
+  ].slice(0, 3);
+
+  const topTasks = (analysis.checklist || []).slice(0, 3).map((t) => taskTitleToQuestion(t.title));
+  const actions = [
+    risk ? `우선순위: ${risk}` : `우선순위: ${sector} · ${region} 기준으로 먼저 확인`,
+    topTasks.length ? `체크리스트 상위 ${topTasks.length}개부터 확인: ${topTasks.join(" / ")}` : "체크리스트가 비어 있어 법령 목록부터 확인",
+    "확실하지 않으면 「원문 보기」로 법제처에서 조항 적용 범위를 확인",
+  ];
+
+  return {
+    conclusion: `${sector} · ${region} 기준으로 지금 당장 확인할 항목을 정리했어요.`,
+    because,
+    actions,
+  };
+}
+
+function taskTitleToQuestion(title) {
+  const text = String(title || "").trim();
+  if (!text) return "이 항목이 우리 상황에 해당하나요?";
+  if (/(대상|해당)/u.test(text)) return `${text.replace(/확인$/u, "").trim()}인가요?`;
+  if (/의무/u.test(text)) return `${text.replace(/확인$/u, "").trim()}가 있나요?`;
+  if (/(점검|보고|제출|신고)/u.test(text)) return `${text.replace(/확인$/u, "").trim()}가 필요한가요?`;
+  if (/(작성|정리|갱신|비교표)/u.test(text)) return `${text.replace(/확인$/u, "").trim()}가 필요하나요?`;
+  return `${text.replace(/확인$/u, "").trim()}을(를) 확인해야 하나요?`;
+}
+
+function taskTitleToNeededInfo(title) {
+  const text = String(title || "");
+  if (/(소방|스프링클러|비상구|피난)/u.test(text)) {
+    return ["건물 용도(다중이용시설 여부)", "연면적/층수", "소방시설 설치 현황", "최근 점검·자체점검 기록"];
+  }
+  if (/(개인정보|처리방침|동의|CCTV|기록)/u.test(text)) {
+    return ["수집 항목(이름/연락처 등)", "수집 목적·보유기간", "제3자 제공/위탁 여부", "파기/접근권한 관리 방식"];
+  }
+  if (/(임금|근로시간|수당|최저임금)/u.test(text)) {
+    return ["근로계약/취업규칙", "근무표(연장·야간·휴일)", "급여명세서/임금 항목", "근로자대표 합의 여부"];
+  }
+  if (/(허가|신고|제출|등록|인허가)/u.test(text)) {
+    return ["사업장/시설 주소", "업종·영업 형태", "관할 기관", "필요 서류/제출 기한"];
+  }
+  return [];
 }
