@@ -1,5 +1,5 @@
 import { analyzeScenario, hydrateAnalysisWithLiveLaws } from "../../../lib/analyzer";
-import { planLawSearchWithGemini, summarizeWithGemini } from "../../../lib/gemini";
+import { summarizeWithGemini } from "../../../lib/gemini";
 import { fetchLawSearchBatch } from "../../../lib/lawApi";
 import { buildDataQuality, buildNextSteps } from "../../../lib/analysisMeta.js";
 import { canonicalizeSearchQueries } from "../../../lib/lawSearchTerms";
@@ -18,25 +18,23 @@ export async function POST(request) {
     const { scenario, sector, region, mode } = await readAnalyzeRequestBody(request);
     const analysis = analyzeScenario({ scenario, sector, region, mode });
 
-    const lawSearchPlan = await planLawSearchWithGemini({ scenario, analysis });
-    await pause(900);
-    const searchQueries = mergeQueries(lawSearchPlan.queries, analysis.searchQueries);
+    const lawSearchPlan = buildInternalLawSearchPlan(analysis);
+    const searchQueries = analysis.searchQueries;
     const lawApi = await fetchLawSearchBatch(searchQueries);
     const plannedAnalysis = { ...analysis, searchQueries };
     const hydratedAnalysis = hydrateAnalysisWithLiveLaws(plannedAnalysis, lawApi, mode);
     hydratedAnalysis.searchQueries = alignSearchQueriesWithLaws(hydratedAnalysis.searchQueries, hydratedAnalysis.laws);
     const gemini = await summarizeWithGemini({ scenario, analysis: hydratedAnalysis, lawApi });
+    const integrations = buildIntegrations({ lawSearchPlan, gemini, lawApi });
     const payload = {
       ...hydratedAnalysis,
       lawApi,
       lawSearchPlan,
       gemini,
-      integrations: buildIntegrations({ lawSearchPlan, gemini, lawApi }),
-      dataQuality: buildDataQuality({ ...hydratedAnalysis, integrations: buildIntegrations({ lawSearchPlan, gemini, lawApi }) }),
-      nextSteps: buildNextSteps(
-        { ...hydratedAnalysis, integrations: buildIntegrations({ lawSearchPlan, gemini, lawApi }) },
-        mode,
-      ),
+      integrations,
+      warnings: buildWarnings(gemini),
+      dataQuality: buildDataQuality({ ...hydratedAnalysis, integrations }),
+      nextSteps: buildNextSteps({ ...hydratedAnalysis, integrations }, mode),
       runtime: {
         region: process.env.VERCEL_REGION || "local",
       },
@@ -63,17 +61,33 @@ function buildIntegrations({ lawSearchPlan, gemini, lawApi }) {
   };
 }
 
-function mergeQueries(primary, fallback) {
-  return canonicalizeSearchQueries([...(primary || []), ...(fallback || [])]).slice(0, 8);
-}
-
 function alignSearchQueriesWithLaws(queries, laws) {
   const titles = (laws || []).map((law) => law.title).filter(Boolean);
   return canonicalizeSearchQueries([...titles, ...(queries || [])]).slice(0, 8);
 }
 
-function pause(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+function buildInternalLawSearchPlan(analysis) {
+  return {
+    enabled: true,
+    configured: Boolean(process.env.GEMINI_API_KEY),
+    queries: [],
+    rationale: ["Gemini 분당 한도 절약을 위해 내부 분석 검색어를 사용합니다."],
+    error: null,
+    usedFallback: true,
+    skipped: true,
+  };
+}
+
+function buildWarnings(gemini) {
+  const warnings = [];
+  if (gemini?.status === 429 || gemini?.retryable) {
+    warnings.push({
+      code: "gemini_rate_limit",
+      message: "Gemini 무료 한도(분당 약 5회)에 걸렸습니다. 1~2분 기다린 뒤 다시 「분석 실행」을 눌러 주세요.",
+      retryAfterSec: 75,
+    });
+  }
+  return warnings;
 }
 
 export async function GET() {

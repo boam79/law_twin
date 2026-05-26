@@ -53,13 +53,43 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [activeView, setActiveView] = useState("relation");
+  const [cooldownUntil, setCooldownUntil] = useState(0);
+  const [cooldownTick, setCooldownTick] = useState(0);
+
+  const cooldownSecondsLeft = useMemo(() => {
+    if (!cooldownUntil) return 0;
+    return Math.max(0, Math.ceil((cooldownUntil - Date.now()) / 1000));
+  }, [cooldownUntil, cooldownTick]);
+
+  useEffect(() => {
+    if (!cooldownUntil || cooldownUntil <= Date.now()) return undefined;
+    const timer = setInterval(() => {
+      if (Date.now() >= cooldownUntil) {
+        setCooldownUntil(0);
+      }
+      setCooldownTick((value) => value + 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [cooldownUntil]);
 
   useEffect(() => {
     runAnalysis();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  function applyRateLimitCooldown(payload) {
+    const warning = payload?.warnings?.find((item) => item.code === "gemini_rate_limit");
+    if (warning?.retryAfterSec) {
+      setCooldownUntil(Date.now() + warning.retryAfterSec * 1000);
+    }
+  }
+
   async function runAnalysis(next = {}) {
+    if (cooldownUntil > Date.now()) {
+      setError(`Gemini 요청 한도입니다. 약 ${cooldownSecondsLeft}초 후에 다시 시도해 주세요.`);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
@@ -77,7 +107,9 @@ export default function Home() {
         const payload = await response.json().catch(() => ({}));
         throw new Error(payload.error || `분석 API ${response.status}`);
       }
-      setAnalysis(await response.json());
+      const payload = await response.json();
+      setAnalysis(payload);
+      applyRateLimitCooldown(payload);
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "분석에 실패했습니다.");
     } finally {
@@ -118,6 +150,7 @@ export default function Home() {
     setActiveView("relation");
     setAnalysis(null);
     setError(null);
+    setCooldownUntil(0);
     runAnalysis({
       scenario: initialScenario,
       sector: "auto",
@@ -140,7 +173,7 @@ export default function Home() {
         <div className="workspace-body">
 
         <p className="sidebar-guide">
-          상황을 적고 <strong>Enter</strong> 또는 <strong>분석 실행</strong>을 누르세요. 줄바꿈은 <strong>Shift+Enter</strong>입니다.
+          상황을 적고 <strong>Enter</strong> 또는 <strong>분석 실행</strong>을 누르세요. Gemini 무료 한도(분당 약 5회)일 때는 1~2분 기다려 주세요.
         </p>
 
         <form
@@ -210,9 +243,22 @@ export default function Home() {
             </div>
           </fieldset>
 
-          <button className="primary-button" type="submit" disabled={loading || !scenario.trim()}>
-            {loading ? "분석 중…" : "3. 분석 실행"}
+          <button
+            className="primary-button"
+            type="submit"
+            disabled={loading || !scenario.trim() || cooldownSecondsLeft > 0}
+          >
+            {loading
+              ? "분석 중…"
+              : cooldownSecondsLeft > 0
+                ? `${cooldownSecondsLeft}초 후 재시도`
+                : "3. 분석 실행"}
           </button>
+          {cooldownSecondsLeft > 0 ? (
+            <p className="cooldown-note" role="status">
+              Gemini 무료 한도(분당 약 5회) 회복을 기다리는 중입니다. {cooldownSecondsLeft}초 후에 다시 분석할 수 있습니다.
+            </p>
+          ) : null}
         </form>
 
         {analysis ? (
@@ -266,6 +312,8 @@ export default function Home() {
         </header>
 
         {error ? <div className="error-box">{error}</div> : null}
+
+        {analysis?.warnings?.length ? <RateLimitNotice warnings={analysis.warnings} secondsLeft={cooldownSecondsLeft} /> : null}
 
         {analysis ? <UserActionGuide steps={analysis.nextSteps} activeView={activeView} onGoTo={setActiveView} /> : null}
 
@@ -457,6 +505,21 @@ export default function Home() {
         </div>
       </section>
     </main>
+  );
+}
+
+function RateLimitNotice({ warnings, secondsLeft }) {
+  return (
+    <div className="rate-limit-notice" role="alert">
+      {warnings.map((warning) => (
+        <p key={warning.code}>{warning.message}</p>
+      ))}
+      {secondsLeft > 0 ? (
+        <p className="rate-limit-wait">
+          <strong>{secondsLeft}초</strong> 뒤에 「분석 실행」이 다시 활성화됩니다. 그동안 아래 법령·체크리스트는 그대로 참고하세요.
+        </p>
+      ) : null}
+    </div>
   );
 }
 

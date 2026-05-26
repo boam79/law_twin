@@ -870,6 +870,40 @@ select {
   line-height: 1.45;
 }
 
+.cooldown-note {
+  margin: 10px 0 0;
+  padding: 10px;
+  border-radius: 8px;
+  background: rgba(255, 196, 120, 0.12);
+  border: 1px solid rgba(255, 196, 120, 0.35);
+  color: #ffd9a8;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.rate-limit-notice {
+  margin-bottom: 14px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 1px solid #f0c878;
+  background: #fff8e8;
+  color: #6d4c12;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.rate-limit-notice p {
+  margin: 0;
+}
+
+.rate-limit-notice p + p {
+  margin-top: 8px;
+}
+
+.rate-limit-wait strong {
+  color: #9a5b00;
+}
+
 .heatmap-intro {
   margin: 0 0 12px;
   color: var(--muted);
