@@ -81,10 +81,10 @@ function buildInternalLawSearchPlan(analysis) {
 function buildWarnings(gemini) {
   const warnings = [];
   if (gemini?.status === 429 || gemini?.retryable) {
-    const tried = gemini?.modelsTried?.map((id) => id.replace("gemini-", "")).join(", ") || "flash 계열";
+    const label = gemini?.modelLabel || gemini?.modelsTried?.[0]?.replace("gemini-", "") || "flash-lite";
     warnings.push({
       code: "gemini_rate_limit",
-      message: `무료 Gemini 모델(${tried}) 한도에 모두 걸렸습니다. 1~2분 기다린 뒤 다시 「분석 실행」을 눌러 주세요.`,
+      message: `Gemini 무료 한도(분당 약 5회)에 걸렸습니다(${label}). 1~2분 후 다시 시도해 주세요. 법령·체크리스트는 그대로 이용할 수 있습니다.`,
       retryAfterSec: 75,
     });
   }

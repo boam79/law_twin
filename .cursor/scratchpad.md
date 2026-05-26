@@ -14,6 +14,7 @@
 - [x] P6 검색어: `canonicalizeLawQuery`, 문장형 검색어 필터
 - [x] 구어체: 학원+학원차 주제 오염 제거, 인터넷 판매·의료 시나리오 보강
 - [x] 보안: 요청 검증·레이트리밋·CSP·Gemini 헤더 인증·law.go.kr 링크 화이트리스트
+- [x] Gemini API 최적화 (0.5.2): Flash Lite 기본, lite 모드, 429 폴백 중단, `GEMINI_SUMMARY_MODE`
 - [ ] Planner: 프로덕션 배포 후 `audit:casual` strict 22/22 재확인
 
 ## Current Status / Progress Tracking

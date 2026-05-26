@@ -342,6 +342,11 @@ export default function Home() {
                   ) : null}
                   <p className="metric-note">전체 요약은 아래 「2. 법령·대응」 분석 흐름과 함께 보세요.</p>
                 </>
+              ) : analysis.gemini?.summarySkipped && !analysis.gemini?.error ? (
+                <>
+                  <strong>{analysis.gemini.skipReason || "AI 요약을 생략했습니다."}</strong>
+                  <p className="metric-note">체크리스트·법령·히트맵은 정상 표시됩니다.</p>
+                </>
               ) : analysis.integrations?.geminiConfigured ? (
                 <>
                   <strong className="metric-warn-title">
