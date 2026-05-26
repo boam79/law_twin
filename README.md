@@ -22,7 +22,7 @@ GEMINI_API_KEY=...
 LAW_API_KEY=...
 GEMINI_MODEL=gemini-2.5-flash
 # 선택: 429 시 시도할 모델 순서 (미설정 시 README 기본 체인)
-# GEMINI_MODEL_FALLBACK=gemini-2.0-flash-lite,gemini-2.0-flash,gemini-2.5-pro
+# GEMINI_MODEL_FALLBACK=gemini-2.5-flash-lite,gemini-2.5-pro
 ```
 
 | 변수 | 설명 |
