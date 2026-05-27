@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import AnalysisSummaryGrid from "./components/AnalysisSummaryGrid";
 import ChecklistExplainer from "./components/ChecklistExplainer";
 import DataQualityBanner from "./components/DataQualityBanner";
 import LawRelationHeatmap from "./components/LawRelationHeatmap";
@@ -10,46 +11,16 @@ import QuestionChecklistItem from "./components/QuestionChecklistItem";
 import RateLimitNotice from "./components/RateLimitNotice";
 import RegionImpactHeatmap from "./components/RegionImpactHeatmap";
 import ResultTopbar from "./components/ResultTopbar";
+import ResultViewTabs from "./components/ResultViewTabs";
 import TabIntro from "./components/TabIntro";
 import UserActionGuide from "./components/UserActionGuide";
+import WorkspacePanel from "./components/WorkspacePanel";
 import { sampleScenarios } from "../lib/lawData";
 import { buildLawRelationMatrix } from "../lib/lawRelationMatrix.js";
 import { buildSafeLawGoKrUrl } from "../lib/security.js";
 import { shortLabel } from "../lib/shortLabel.js";
 
-const APP_VERSION = "0.5.10";
-
-const modes = [
-  { id: "impact", label: "영향", hint: "어떤 법령이 걸리는지" },
-  { id: "conflict", label: "충돌", hint: "규정이 겹치는지" },
-  { id: "checklist", label: "대응", hint: "해야 할 일" },
-];
-
-const sectors = [
-  { id: "auto", label: "자동 판별" },
-  { id: "general", label: "전체 법령" },
-  { id: "workplace", label: "노동·인사" },
-  { id: "enterprise", label: "기업 준법" },
-  { id: "public", label: "공공·행정" },
-  { id: "privacy", label: "개인정보" },
-  { id: "realestate", label: "부동산·임대차" },
-  { id: "tax", label: "세무" },
-  { id: "food", label: "식품·위생" },
-  { id: "construction", label: "건축·인허가" },
-  { id: "environment", label: "환경" },
-  { id: "traffic", label: "교통·안전" },
-  { id: "education", label: "교육" },
-  { id: "healthcare", label: "의료" },
-  { id: "fire", label: "소방·시설안전" },
-];
-
-const regions = [
-  { id: "auto", label: "자동 판별" },
-  { id: "seoul", label: "서울" },
-  { id: "gyeonggi", label: "경기" },
-  { id: "busan", label: "부산" },
-  { id: "nationwide", label: "전국" },
-];
+const APP_VERSION = "0.5.11";
 
 export default function Home() {
   const [scenario, setScenario] = useState("");
@@ -181,139 +152,22 @@ export default function Home() {
 
   return (
     <main className="app-shell">
-      <aside className="workspace-panel">
-        <button type="button" className="brand-row brand-button" onClick={resetApp} aria-label="LawTwin 처음으로 초기화">
-          <div className="brand-mark">LT</div>
-          <div>
-            <h1>LawTwin</h1>
-            <p>법령 영향·관계 분석</p>
-          </div>
-        </button>
-
-        <div className="workspace-body">
-
-        <p className="sidebar-guide">
-          상황을 적고 <strong>Enter</strong> 또는 <strong>분석 실행</strong>을 누르세요. Gemini 무료 한도(분당 약 5회)일 때는 1~2분 기다려 주세요.
-        </p>
-
-        <form
-          className="input-section"
-          onSubmit={(event) => {
-            event.preventDefault();
-            if (!loading && scenario.trim()) runAnalysis();
-          }}
-        >
-          <div className="section-head">
-            <h2>1. 상황 입력</h2>
-            <button className="icon-button" type="button" onClick={rotateScenario} aria-label="예시 상황 불러오기" title="예시 상황">
-              ↺
-            </button>
-          </div>
-          <textarea
-            value={scenario}
-            onChange={(event) => setScenario(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key !== "Enter" || event.shiftKey || event.nativeEvent.isComposing) return;
-              event.preventDefault();
-              if (!loading && scenario.trim()) runAnalysis();
-            }}
-            placeholder="예: 알바 주휴수당이랑 야근 수당이 헷갈려요. 뭐부터 봐야 할까요?"
-            aria-label="분석할 상황"
-            aria-keyshortcuts="Enter"
-          />
-
-          <div className="field-grid">
-            <label>
-              업종
-              <select value={sector} onChange={(event) => setSector(event.target.value)}>
-                {sectors.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              지역
-              <select value={region} onChange={(event) => setRegion(event.target.value)}>
-                {regions.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-
-          <fieldset className="mode-fieldset">
-            <legend>2. 보기 방식</legend>
-            <div className="mode-row">
-              {modes.map((item) => (
-                <button
-                  key={item.id}
-                  className={`mode-chip ${mode === item.id ? "active" : ""}`}
-                  type="button"
-                  onClick={() => changeMode(item.id)}
-                  title={item.hint}
-                >
-                  <span>{item.label}</span>
-                  <small>{item.hint}</small>
-                </button>
-              ))}
-            </div>
-          </fieldset>
-
-          <button
-            className="primary-button"
-            type="submit"
-            disabled={loading || !scenario.trim() || cooldownSecondsLeft > 0}
-          >
-            {loading
-              ? "분석 중…"
-              : cooldownSecondsLeft > 0
-                ? `${cooldownSecondsLeft}초 후 재시도`
-                : "3. 분석 실행"}
-          </button>
-          {cooldownSecondsLeft > 0 ? (
-            <p className="cooldown-note" role="status">
-              Gemini 무료 한도(분당 약 5회) 회복을 기다리는 중입니다. {cooldownSecondsLeft}초 후에 다시 분석할 수 있습니다.
-            </p>
-          ) : null}
-        </form>
-
-        {analysis ? (
-          <section className="input-section compact insight-card">
-            <h2>추출된 조건</h2>
-            <div className="tag-list">
-              <span className="tag">업종: {analysis.labels.sector}</span>
-              <span className="tag">지역: {analysis.labels.region}</span>
-              {analysis.labels.topics.map((topic) => (
-                <span className="tag" key={topic}>
-                  {topic}
-                </span>
-              ))}
-            </div>
-          </section>
-        ) : null}
-
-        <section className="input-section compact">
-          <h2>연동</h2>
-          <div className="tag-list">
-            <span className={`tag ${analysis?.integrations?.lawApi ? "ok" : ""}`}>법제처</span>
-            <span className={`tag ${analysis?.integrations?.gemini ? "ok" : ""}`}>
-              Gemini{analysis?.integrations?.geminiSummary ? "·요약" : analysis?.integrations?.geminiPlan ? "·검색" : ""}
-            </span>
-          </div>
-          {analysis?.lawSearchPlan?.error ? <p className="integration-note">검색: {analysis.lawSearchPlan.error}</p> : null}
-          {analysis?.gemini?.error ? <p className="integration-note">요약: {analysis.gemini.error}</p> : null}
-        </section>
-        </div>
-
-        <footer className="creator-footer">
-          <span className="creator-label">제작</span>
-          <span className="creator-name">Boam79</span>
-        </footer>
-      </aside>
+      <WorkspacePanel
+        scenario={scenario}
+        onScenarioChange={setScenario}
+        sector={sector}
+        onSectorChange={setSector}
+        region={region}
+        onRegionChange={setRegion}
+        mode={mode}
+        onModeChange={changeMode}
+        loading={loading}
+        cooldownSecondsLeft={cooldownSecondsLeft}
+        analysis={analysis}
+        onReset={resetApp}
+        onAnalyze={() => runAnalysis()}
+        onRotateScenario={rotateScenario}
+      />
 
       <section className="result-panel">
         <ResultTopbar analysis={analysis} version={APP_VERSION} />
@@ -335,80 +189,9 @@ export default function Home() {
 
         {analysis ? <PlainLanguageSummary analysis={analysis} onGoTo={setActiveView} /> : null}
 
-        {analysis ? (
-          <section className="summary-grid">
-            <article className="metric-panel highlight">
-              <span className="metric-label">핵심 법령</span>
-              <strong>{analysis.laws[0] ? analysis.laws[0].title : "-"}</strong>
-              <p>{analysis.laws[0]?.evidence ?? ""}</p>
-            </article>
-            <article className={`metric-panel ${analysis.gemini?.retryable ? "metric-panel-warn" : ""}`}>
-              <span className="metric-label">AI 요약 (Gemini)</span>
-              {analysis.gemini?.text ? (
-                <>
-                  <strong>{analysis.gemini.text.split("\n")[0]}</strong>
-                  {analysis.gemini.modelLabel ? (
-                    <p className="metric-note">요약 모델: {analysis.gemini.modelLabel}</p>
-                  ) : null}
-                  {analysis.gemini.fallbackNote ? (
-                    <p className="metric-note warn">{analysis.gemini.fallbackNote}</p>
-                  ) : null}
-                  {analysis.gemini.modelsTriedLabel ? (
-                    <p className="metric-note">시도 순서: {analysis.gemini.modelsTriedLabel}</p>
-                  ) : null}
-                  <p className="metric-note">전체 요약은 아래 「2. 법령·대응」 분석 흐름과 함께 보세요.</p>
-                </>
-              ) : analysis.gemini?.summarySkipped && !analysis.gemini?.error ? (
-                <>
-                  <strong>{analysis.gemini.skipReason || "AI 요약을 생략했습니다."}</strong>
-                  <p className="metric-note">체크리스트·법령·히트맵은 정상 표시됩니다.</p>
-                </>
-              ) : analysis.integrations?.geminiConfigured ? (
-                <>
-                  <strong className="metric-warn-title">
-                    {analysis.gemini?.error || "요약 없음 — 체크리스트·법령 목록을 참고하세요."}
-                  </strong>
-                  {analysis.gemini?.modelsTriedLabel ? (
-                    <p className="metric-note">시도 순서: {analysis.gemini.modelsTriedLabel}</p>
-                  ) : null}
-                  {analysis.gemini?.retryable ? (
-                    <button className="ghost-button inline-retry" type="button" onClick={() => runAnalysis()} disabled={loading}>
-                      AI 요약 다시 시도
-                    </button>
-                  ) : null}
-                </>
-              ) : (
-                <strong>Gemini API 키가 없어 요약을 건너뜁니다.</strong>
-              )}
-            </article>
-            <article className="metric-panel">
-              <span className="metric-label">법제처 검색어</span>
-              <div className="query-chips">
-                {analysis.searchQueries?.slice(0, 4).map((query) => (
-                  <span key={query}>{shortLabel(query, 18)}</span>
-                ))}
-              </div>
-              {analysis.dataQuality?.searchQueries?.mismatch ? (
-                <p className="metric-note warn">표시 법령과 검색어가 다를 수 있어요. 아래 관련 법령을 우선 보세요.</p>
-              ) : null}
-            </article>
-          </section>
-        ) : null}
+        <AnalysisSummaryGrid analysis={analysis} loading={loading} onRetryAnalysis={() => runAnalysis()} />
 
-        <nav className="view-tabs" aria-label="결과 보기 전환">
-          <button type="button" className={activeView === "relation" ? "active" : ""} onClick={() => setActiveView("relation")}>
-            <span>1. 법령 연관</span>
-            <small>무엇을 같이 볼지</small>
-          </button>
-          <button type="button" className={activeView === "detail" ? "active" : ""} onClick={() => setActiveView("detail")}>
-            <span>2. 법령·대응</span>
-            <small>체크리스트·원문</small>
-          </button>
-          <button type="button" className={activeView === "region" ? "active" : ""} onClick={() => setActiveView("region")}>
-            <span>3. 지역·업무</span>
-            <small>우선순위 참고</small>
-          </button>
-        </nav>
+        <ResultViewTabs activeView={activeView} onViewChange={setActiveView} />
 
         <div className="results-body">
           {activeView === "relation" ? (

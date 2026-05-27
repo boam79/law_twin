@@ -1,6 +1,6 @@
 import Metric from "./Metric";
 
-export default function ResultTopbar({ analysis, version = "0.5.10" }) {
+export default function ResultTopbar({ analysis, version = "0.5.11" }) {
   return (
     <header className="topbar">
       <div>

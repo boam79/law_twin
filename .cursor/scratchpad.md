@@ -14,7 +14,7 @@
 | 분석 엔진 | `lib/analyzer.js` ~1,021줄, `lib/lawData.js` ~547줄, 내부 법령 규칙 ~31건 |
 | 법제처 | `lawSearch.do` 검색만, 0건 시 emergency 재시도 |
 | Gemini | 요약 1회(기본); `GEMINI_PLANNER_MODE=on` 시 Planner 1회·요약 자동 off |
-| UI | `app/page.js` ~993줄 (컴포넌트 분리 미완) |
+| UI | `app/page.js` ~380줄, `app/components/` 15파일 |
 | 검증 | `npm test` 7케이스, `audit:casual` 24+ 시나리오, CI: pr-check + casual-audit |
 | 레이트리밋 | Middleware 24회/분, in-memory Map |
 | 함수 | `vercel.json` maxDuration 15초 |
@@ -56,7 +56,7 @@
 
 | ID | 제안 | 상태 |
 |----|------|------|
-| E1 | `app/components/` 분리 | **1차** v0.5.9 (Topbar·가이드·배너) |
+| E1 | `app/components/` 분리 | **2차** v0.5.10 (히트맵·체크리스트·Panel) |
 | E2 | dataQuality 상단 노출 | **완료** v0.5.5 |
 
 ### F. 보안·운영
@@ -106,6 +106,7 @@
 | E-7 | PR `simulate:casual:ci` | pr-check 로컬 서버 23건 | **완료** |
 | E-8 | nextSteps 스크롤 (G1) | 분석 성공 시 「이렇게 보세요」 | **완료** |
 | E-9 | page 컴포넌트 1차 분리 (E1) | `app/components/*` 5파일 | **완료** |
+| E-10 | page 컴포넌트 2차 (E1) | 히트맵·체크리스트·lib 분리 | **완료** |
 
 ## Project Status Board
 
@@ -116,12 +117,14 @@
 - [x] D3 PR simulate:casual (E-7)
 - [x] G1 nextSteps 스크롤 (E-8)
 - [x] E1 컴포넌트 1차 (E-9)
-- [ ] E1 2차 (히트맵·체크리스트·입력 폼)
+- [x] E1 2차 히트맵·체크리스트 (E-10)
+- [x] E1 3차 입력·summary-grid (E-11)
 - [ ] 프로덕션 `audit:casual` strict 재확인
 
 ## Current Status / Progress Tracking
 
-- **v0.5.9** (Executor): `app/components/` — ResultTopbar, UserActionGuide, RateLimitNotice, DataQualityBanner, Metric (`page.js` ~930줄).
+- **v0.5.10** (Executor): 히트맵·체크리스트·PlainSummary 컴포넌트, `lib/lawRelationMatrix.js`, `page.js` ~530줄, 테스트 12건.
+- **v0.5.9**: ResultTopbar·가이드·배너 분리.
 - **v0.5.8**: nextSteps 스크롤.
 - **v0.5.7**: PR CI `simulate:casual:ci`, `LAW_TWIN_SIM_MODES`, `ANALYZE_RATE_LIMIT`.
 - **v0.5.6**: topicFallbacks, Gemini Planner.
