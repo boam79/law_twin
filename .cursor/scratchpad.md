@@ -13,7 +13,7 @@
 | 스택 | Next.js 15, React 19, JS, `"type": "module"` |
 | 분석 엔진 | `lib/analyzer.js`, `lib/topicFallbacks.js`, `lib/lawData.js` |
 | 법제처 | `lawSearch.do`, emergency 재시도, `LAW_API_MAX_QUERIES` |
-| Gemini | 요약 1회; `GEMINI_PLANNER_MODE=on` 시 Planner 1회·요약 자동 off |
+| Gemini | 요약 1회; Planner on 시 요약 off; **429 시 `GEMINI_API_KEYS` 순서 로테이션** (v0.5.13) |
 | UI | `app/page.js` ~270줄, `app/components/` 19파일 |
 | 검증 | `npm test` 14케이스, PR: simulate+audit 로컬, casual-audit 프로덕션 |
 | 레이트리밋 | Middleware in-memory, `ANALYZE_RATE_LIMIT` env |
@@ -47,6 +47,7 @@
 
 ## Current Status / Progress Tracking
 
+- **v0.5.13**: `GEMINI_API_KEYS` — 429 시 API 키 순서 로테이션 (모델 폴백 on 429는 유지 안 함).
 - **v0.5.12**: B2 PR audit, F1–F3, AnalyzeDetailView·LawListPanel, `lawApiConfig`, `analyzeLog`.
 - PR [#4](https://github.com/boam79/law_twin/pull/4) — `main` 머지 대기.
 - 로컬: `npm test`, `simulate:casual:ci`, `audit:casual:ci` (서버 기동 후).
@@ -61,6 +62,6 @@
 - `표시` 단독 필터 → 학원은 화이트리스트.
 - 프로덕션 audit은 배포된 코드 기준.
 - Gemini `x-goog-api-key` 헤더.
-- 429 시 모델 폴백 중단.
+- 429 시 모델 폴백 중단; **API 키는 순서대로 시도** (`GEMINI_API_KEYS`).
 - audit 실패 시: `lawData` 키워드·`topicFallbacks`·`queryExpansionRules`·`scripts/audit-casual-stories.mjs` expectedAny 동기 PR.
 - PR CI: `ANALYZE_RATE_LIMIT=120`, Gemini off, 로컬 서버 3007.
