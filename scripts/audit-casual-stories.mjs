@@ -41,6 +41,19 @@ const extraVague = [
   { domain: "vague-shop", scenario: "인터넷으로 뭔가 팔 건데 법적으로 뭐 걸릴까?", expectedAny: ["전자상거래 등에서의 소비자보호에 관한 법률"] },
   { domain: "vague-home", scenario: "전세 살고 있는데 집주인이 이상해. 도와줘.", expectedAny: ["주택임대차보호법"] },
   { domain: "vague-fire", scenario: "가게 문 열려고 하는데 안전 쪽으로 뭐 해야 돼?", expectedAny: ["소방시설 설치 및 관리에 관한 법률", "화재의 예방 및 안전관리에 관한 법률"] },
+  {
+    domain: "vague-law",
+    scenario: "그냥 법 좀 알려줘",
+    expectedAny: ["근로기준법", "식품위생법", "민법", "행정절차법"],
+    forbiddenAny: [],
+    minLaws: 1,
+  },
+  {
+    domain: "vague-weird",
+    scenario: "이상한 일이 생겼어",
+    minLaws: 1,
+    forbiddenOnlyAdmin: true,
+  },
 ];
 
 const stories = [...casualStories, ...extraVague];
@@ -99,6 +112,14 @@ for (const story of stories) {
     topLawTitles.slice(0, 6).some((t) => lawTitleMatches(t, name)),
   );
 
+  const minLaws = story.minLaws ?? 1;
+  const lawsCountOk = laws.length >= minLaws;
+
+  const forbiddenOnlyAdmin =
+    story.forbiddenOnlyAdmin &&
+    topLawTitles.length > 0 &&
+    topLawTitles.every((t) => lawTitleMatches(t, "행정절차법") || /시행령|시행규칙/u.test(t));
+
   const queryCoverage = queries.map((q) => {
     const matched = lawApiItems.filter((item) => normalizeCompact(item.matchedQuery) === normalizeCompact(q));
     return { query: q, apiHits: matched.length, sample: matched[0]?.title };
@@ -123,6 +144,8 @@ for (const story of stories) {
     missingExpected,
     missingInTopLaws,
     forbiddenHit,
+    lawsCountOk,
+    forbiddenOnlyAdmin: forbiddenOnlyAdmin || false,
     emptyApiQueries,
     badQueries,
     geminiPlanError: body.lawSearchPlan?.error,
@@ -142,6 +165,8 @@ const summary = {
   strictFail: officialResults.filter((r) => !r.strictPass).map((r) => ({ domain: r.domain, missingInTopLaws: r.missingInTopLaws, topLawTitles: r.topLawTitles.slice(0, 4) })),
   badQueryStories: officialResults.filter((r) => r.badQueries?.length).map((r) => ({ domain: r.domain, badQueries: r.badQueries })),
   forbiddenHits: results.filter((r) => r.forbiddenHit.length).map((r) => ({ domain: r.domain, forbidden: r.forbiddenHit })),
+  zeroLaws: officialResults.filter((r) => !r.lawsCountOk).map((r) => r.domain),
+  adminOnlyStories: officialResults.filter((r) => r.forbiddenOnlyAdmin).map((r) => r.domain),
   emptyApiQueryStories: results.filter((r) => r.emptyApiQueries.length).map((r) => ({ domain: r.domain, empty: r.emptyApiQueries })),
   lawApiErrors: results.filter((r) => r.lawApiError || r.lawApiErrors).length,
   zeroLawApi: results.filter((r) => r.lawApiCount === 0).map((r) => r.domain),
@@ -153,7 +178,10 @@ const shouldFail =
   summary.httpFail > 0 ||
   summary.looseFail.length > 0 ||
   (STRICT_ALL ? summary.strictFail.length > 0 : false) ||
-  summary.badQueryStories.length > 0;
+  summary.badQueryStories.length > 0 ||
+  summary.forbiddenHits.length > 0 ||
+  summary.zeroLaws.length > 0 ||
+  summary.adminOnlyStories.length > 0;
 
 if (shouldFail) {
   process.exit(1);
