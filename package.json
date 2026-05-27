@@ -1,6 +1,6 @@
 {
   "name": "law-twin",
-  "version": "0.5.11",
+  "version": "0.5.12",
   "private": true,
   "type": "module",
   "scripts": {
@@ -11,6 +11,7 @@
     "simulate:casual": "node scripts/simulate-user-stories.mjs --casual-only",
     "simulate:casual:ci": "LAW_TWIN_SIM_MODES=impact node scripts/simulate-user-stories.mjs --casual-only",
     "audit:casual": "node scripts/audit-casual-stories.mjs",
+    "audit:casual:ci": "LAW_TWIN_BASE_URL=http://127.0.0.1:3007 LAW_TWIN_AUDIT_DELAY_MS=60 LAW_TWIN_AUDIT_STRICT=0 SKIP_GEMINI_SUMMARY=1 node scripts/audit-casual-stories.mjs",
     "test": "node --test tests/*.test.mjs",
     "lint": "next lint"
   },

@@ -18,7 +18,7 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npm test
-      - name: Casual story simulate (local server)
+      - name: Casual simulate + audit (local server)
         env:
           PORT: "3007"
           SKIP_GEMINI_SUMMARY: "1"
@@ -26,6 +26,7 @@ jobs:
           ANALYZE_RATE_LIMIT: "120"
           LAW_TWIN_BASE_URL: "http://127.0.0.1:3007"
           LAW_TWIN_SIM_MODES: "impact"
+          LAW_API_KEY: ${{ secrets.LAW_API_KEY }}
         run: |
           npm run start &
           SERVER_PID=$!
@@ -42,3 +43,4 @@ jobs:
             sleep 1
           done
           npm run simulate:casual:ci
+          npm run audit:casual:ci

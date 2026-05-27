@@ -2,12 +2,12 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import AnalysisSummaryGrid from "./components/AnalysisSummaryGrid";
-import ChecklistExplainer from "./components/ChecklistExplainer";
+import AnalyzeDetailView from "./components/AnalyzeDetailView";
 import DataQualityBanner from "./components/DataQualityBanner";
+import LawApiSourceList from "./components/LawApiSourceList";
 import LawRelationHeatmap from "./components/LawRelationHeatmap";
 import Panel from "./components/Panel";
 import PlainLanguageSummary from "./components/PlainLanguageSummary";
-import QuestionChecklistItem from "./components/QuestionChecklistItem";
 import RateLimitNotice from "./components/RateLimitNotice";
 import RegionImpactHeatmap from "./components/RegionImpactHeatmap";
 import ResultTopbar from "./components/ResultTopbar";
@@ -17,10 +17,8 @@ import UserActionGuide from "./components/UserActionGuide";
 import WorkspacePanel from "./components/WorkspacePanel";
 import { sampleScenarios } from "../lib/lawData";
 import { buildLawRelationMatrix } from "../lib/lawRelationMatrix.js";
-import { buildSafeLawGoKrUrl } from "../lib/security.js";
-import { shortLabel } from "../lib/shortLabel.js";
 
-const APP_VERSION = "0.5.11";
+const APP_VERSION = "0.5.12";
 
 export default function Home() {
   const [scenario, setScenario] = useState("");
@@ -204,82 +202,7 @@ export default function Home() {
             </Panel>
           ) : null}
 
-          {activeView === "detail" ? (
-            <div className="detail-grid">
-              <TabIntro
-                title="여기서 할 일"
-                body="왼쪽 법령의 「원문 보기」로 근거를 확인하고, 오른쪽 체크리스트에서 할 일을 하나씩 체크하세요."
-                wide
-              />
-              <Panel
-                title="관련 법령"
-                badge={
-                  analysis?.dataQuality?.laws?.lawApiVerified
-                    ? `법제처 ${analysis.dataQuality.laws.lawApiVerified}건`
-                    : analysis?.dataQuality?.laws?.label || "내부 후보"
-                }
-              >
-                <div className="law-list">
-                  {analysis?.laws.length ? (
-                    analysis.laws.map((law, index) => (
-                      <article className="law-item" key={law.id}>
-                        <div className="law-item-head">
-                          <span className="law-rank">{index + 1}</span>
-                          <strong>
-                            {law.title} {law.article ? `· ${law.article}` : ""}
-                          </strong>
-                        </div>
-                        <div className="law-meta">
-                          {law.source === "lawApi" ? "법제처" : law.type} · {law.agency}
-                          {law.matchedQuery ? ` · ${shortLabel(law.matchedQuery, 16)}` : ""}
-                        </div>
-                        <p className="evidence">{law.evidence}</p>
-                        {(() => {
-                          const lawUrl = buildSafeLawGoKrUrl(law.detailPath);
-                          return lawUrl ? (
-                            <a className="law-link" href={lawUrl} target="_blank" rel="noreferrer noopener">
-                              원문 보기
-                            </a>
-                          ) : null;
-                        })()}
-                      </article>
-                    ))
-                  ) : (
-                    <div className="empty-state">관련 법령이 없습니다. 상황을 조금 더 구체적으로 적어 보세요.</div>
-                  )}
-                </div>
-              </Panel>
-
-              <div className="detail-side">
-                <Panel title="검토 체크리스트" badge={`할 일 ${analysis?.checklist?.length ?? 0}개`}>
-                  <ChecklistExplainer description={analysis?.dataQuality?.checklist?.description} />
-                  <button className="copy-button" type="button" onClick={copyChecklist}>
-                    목록 복사
-                  </button>
-                  <div className="checklist">
-                    {analysis?.checklist.map((task) => (
-                      <QuestionChecklistItem key={task.title} task={task} />
-                    ))}
-                  </div>
-                </Panel>
-
-                <Panel title="충돌 검토 후보" badge={`${analysis?.conflicts?.length ?? 0}건`}>
-                  <div className="conflict-list">
-                    {analysis?.conflicts?.length ? (
-                      analysis.conflicts.map((conflict) => (
-                        <article className={`conflict-item ${conflict.level === "high" ? "high" : ""}`} key={conflict.title}>
-                          <strong>{conflict.title}</strong>
-                          <p>{conflict.detail}</p>
-                        </article>
-                      ))
-                    ) : (
-                      <div className="empty-state">직접 충돌 후보가 없습니다. 적용 범위·신고 누락을 우선 확인하세요.</div>
-                    )}
-                  </div>
-                </Panel>
-              </div>
-            </div>
-          ) : null}
+          {activeView === "detail" ? <AnalyzeDetailView analysis={analysis} onCopyChecklist={copyChecklist} /> : null}
 
           {activeView === "region" ? (
             <div className="region-grid">
@@ -291,22 +214,7 @@ export default function Home() {
               <Panel title="지역·업무별 검토 우선순위" badge={analysis?.dataQuality?.heatmap?.label || "참고용"} wide>
                 <RegionImpactHeatmap heatmap={analysis?.heatmap ?? []} focusRegion={analysis?.labels?.region} />
               </Panel>
-              <Panel title="법제처 검색 원본" badge={analysis?.lawApi?.items?.length ? `${analysis.lawApi.items.length}건` : "연동"}>
-                <div className="source-list">
-                  {analysis?.lawApi?.items?.length ? (
-                    analysis.lawApi.items.slice(0, 12).map((law) => (
-                      <article className="source-item" key={`${law.id}-${law.title}`}>
-                        <strong>{law.title || "법령명 없음"}</strong>
-                        <span>
-                          {law.agency || "소관 미확인"} · {law.matchedQuery ? shortLabel(law.matchedQuery, 14) : ""}
-                        </span>
-                      </article>
-                    ))
-                  ) : (
-                    <div className="empty-state">{analysis?.lawApi?.error || "법제처 검색 결과가 없습니다."}</div>
-                  )}
-                </div>
-              </Panel>
+              <LawApiSourceList lawApi={analysis?.lawApi} />
             </div>
           ) : null}
         </div>

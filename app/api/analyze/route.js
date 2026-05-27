@@ -3,6 +3,7 @@ import { planLawSearchWithGemini, summarizeWithGemini } from "../../../lib/gemin
 import { fetchLawSearchBatch } from "../../../lib/lawApi";
 import { buildDataQuality, buildNextSteps } from "../../../lib/analysisMeta.js";
 import { canonicalizeSearchQueries } from "../../../lib/lawSearchTerms";
+import { logAnalyzeEvent } from "../../../lib/analyzeLog.js";
 import {
   getGeminiPlannerMode,
   readAnalyzeRequestBody,
@@ -15,6 +16,7 @@ export const preferredRegion = "icn1";
 export const dynamic = "force-dynamic";
 
 export async function POST(request) {
+  const startedAt = Date.now();
   try {
     const { scenario, sector, region, mode } = await readAnalyzeRequestBody(request);
     const analysis = analyzeScenario({ scenario, sector, region, mode });
@@ -42,9 +44,30 @@ export async function POST(request) {
       },
     };
 
+    logAnalyzeEvent({
+      ok: true,
+      mode,
+      sector,
+      region,
+      scenarioLength: scenario.length,
+      laws: hydratedAnalysis.laws?.length ?? 0,
+      searchQueries: hydratedAnalysis.searchQueries?.length ?? 0,
+      lawApiItems: lawApi?.items?.length ?? 0,
+      geminiSummary: Boolean(gemini?.text),
+      geminiPlanner: Boolean(lawSearchPlan?.queries?.length && !lawSearchPlan.usedFallback),
+      warnings: payload.warnings?.map((item) => item.code) ?? [],
+      durationMs: Date.now() - startedAt,
+    });
+
     return Response.json(payload);
   } catch (error) {
     const { message, status } = sanitizeClientErrorMessage(error);
+    logAnalyzeEvent({
+      ok: false,
+      status,
+      durationMs: Date.now() - startedAt,
+      error: message,
+    });
     return Response.json({ error: message }, { status });
   }
 }
