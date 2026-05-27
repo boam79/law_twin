@@ -13,7 +13,7 @@
 | 스택 | Next.js 15, React 19, JS, `"type": "module"` (v0.5.5~) |
 | 분석 엔진 | `lib/analyzer.js` ~1,021줄, `lib/lawData.js` ~547줄, 내부 법령 규칙 ~31건 |
 | 법제처 | `lawSearch.do` 검색만, 0건 시 emergency 재시도 |
-| Gemini | 요약 1회; `planLawSearchWithGemini` route에서 skipped |
+| Gemini | 요약 1회(기본); `GEMINI_PLANNER_MODE=on` 시 Planner 1회·요약 자동 off |
 | UI | `app/page.js` ~993줄 (컴포넌트 분리 미완) |
 | 검증 | `npm test` 7케이스, `audit:casual` 24+ 시나리오, CI: pr-check + casual-audit |
 | 레이트리밋 | Middleware 24회/분, in-memory Map |
@@ -26,7 +26,7 @@
 | ID | 제안 | 상태 |
 |----|------|------|
 | A1 | audit 실패 → lawData·키워드·expansion 동기 PR 체크리스트 | 문서화(본 표) |
-| A2 | `lib/topicFallbacks.js` 분리 | 대기 |
+| A2 | `lib/topicFallbacks.js` 분리 | **완료** v0.5.6 |
 | A3 | 모호 입력 audit (`vague-law`, `vague-weird`, minLaws, forbidden) | **완료** v0.5.5 |
 
 ### B. 법제처 API
@@ -42,7 +42,7 @@
 | ID | 제안 | 상태 |
 |----|------|------|
 | C1 | `GEMINI_SUMMARY_MODE` / Planner 분리 문서 | README·env 예시 |
-| C2 | `GEMINI_PLANNER_MODE` + 전용 model chain | 대기 (아래 Planner 모드) |
+| C2 | `GEMINI_PLANNER_MODE` + 전용 model chain | **완료** v0.5.6 |
 
 ### D. 테스트·CI
 
@@ -102,26 +102,26 @@
 | E-3 | audit minLaws·forbidden·adminOnly | 스크립트 반영 | 완료 |
 | E-4 | pr-check.yml | build+test on PR | 완료 |
 | E-5 | topbar 법제처 메타 | UI 표시 | 완료 |
-| E-6 | topicFallbacks 분리 | 다음 Executor | 대기 |
+| E-6 | topicFallbacks 분리 | `lib/topicFallbacks.js`, 테스트 3건 | **완료** |
 
 ## Project Status Board
 
 - [x] P1~P6, 보안, Gemini 0.5.2, law-api 0.5.4, checklist layout
 - [x] E-1~E-5 (로드맵 1차)
-- [ ] E-6 topicFallbacks 분리
-- [ ] Gemini Planner 모드 구현 (C2)
+- [x] E-6 topicFallbacks 분리
+- [x] Gemini Planner 모드 구현 (C2)
 - [ ] 프로덕션 `audit:casual` strict 재확인
 
 ## Current Status / Progress Tracking
 
-- **v0.5.5** (Executor): `type:module`, `npm test`, pr-check CI, audit 강화, topbar 법제처 메타, analyzer ESM import 수정.
-- 로컬: `npm test` 7/7, `npm run build` 성공.
+- **v0.5.6** (Executor): `lib/topicFallbacks.js`, `GEMINI_PLANNER_MODE` + `getGeminiPlannerModelChain`, route 병합 검색어.
+- 로컬: `npm test` 10/10, `npm run build` 성공.
 - 프로덕션 audit는 배포 후 `LAW_TWIN_BASE_URL=... npm run audit:casual` 로 확인 필요.
 
 ## Executor's Feedback or Assistance Requests
 
-- **사용자 확인 요청**: v0.5.5 배포 후 ① 상단 「법제처 N건·화면 M건」 표시 ② 5인미만 산재 시나리오 법령 1건 이상 ③ 체크리스트 가로 레이아웃.
-- 다음 단계(E-6) 진행 전 위 3가지 OK 여부 알려 주세요.
+- **사용자 확인 요청**: v0.5.6 배포 후 ① Planner off 동작 동일 ② (선택) `GEMINI_PLANNER_MODE=on` 시 검색어·법령 품질 ③ v0.5.5 UI 3가지(메타·산재·체크리스트).
+- 다음 Executor 후보: E1 page 컴포넌트 분리, D3 PR simulate:casual, B2 로컬 audit CI.
 
 ## Lessons
 

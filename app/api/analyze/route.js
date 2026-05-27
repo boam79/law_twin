@@ -1,9 +1,10 @@
 import { analyzeScenario, buildEmergencySearchQueries, hydrateAnalysisWithLiveLaws } from "../../../lib/analyzer";
-import { summarizeWithGemini } from "../../../lib/gemini";
+import { planLawSearchWithGemini, summarizeWithGemini } from "../../../lib/gemini";
 import { fetchLawSearchBatch } from "../../../lib/lawApi";
 import { buildDataQuality, buildNextSteps } from "../../../lib/analysisMeta.js";
 import { canonicalizeSearchQueries } from "../../../lib/lawSearchTerms";
 import {
+  getGeminiPlannerMode,
   readAnalyzeRequestBody,
   sanitizeClientErrorMessage,
   sanitizeIntegrationStatus,
@@ -18,8 +19,8 @@ export async function POST(request) {
     const { scenario, sector, region, mode } = await readAnalyzeRequestBody(request);
     const analysis = analyzeScenario({ scenario, sector, region, mode });
 
-    const lawSearchPlan = buildInternalLawSearchPlan(analysis);
-    const searchQueries = analysis.searchQueries;
+    const lawSearchPlan = await buildLawSearchPlan(scenario, analysis);
+    const searchQueries = mergeLawSearchQueries(analysis.searchQueries, lawSearchPlan);
     const emergencyQueries = buildEmergencySearchQueries(analysis.conditions, searchQueries, scenario);
     const lawApi = await fetchLawSearchBatch(searchQueries, { emergencyQueries });
     const plannedAnalysis = { ...analysis, searchQueries };
@@ -70,7 +71,27 @@ function alignSearchQueriesWithLaws(queries, laws) {
   return canonicalizeSearchQueries([...titles, ...(queries || [])]).slice(0, 8);
 }
 
-function buildInternalLawSearchPlan(analysis) {
+async function buildLawSearchPlan(scenario, analysis) {
+  if (getGeminiPlannerMode() !== "on") {
+    return buildInternalLawSearchPlan();
+  }
+
+  if (!process.env.GEMINI_API_KEY) {
+    return {
+      enabled: false,
+      configured: false,
+      queries: [],
+      rationale: ["GEMINI_PLANNER_MODE=on 이지만 GEMINI_API_KEY가 없어 내부 검색어를 사용합니다."],
+      error: null,
+      usedFallback: true,
+      skipped: true,
+    };
+  }
+
+  return planLawSearchWithGemini({ scenario, analysis });
+}
+
+function buildInternalLawSearchPlan() {
   return {
     enabled: true,
     configured: Boolean(process.env.GEMINI_API_KEY),
@@ -80,6 +101,18 @@ function buildInternalLawSearchPlan(analysis) {
     usedFallback: true,
     skipped: true,
   };
+}
+
+function mergeLawSearchQueries(internalQueries, lawSearchPlan) {
+  const internal = canonicalizeSearchQueries(internalQueries || []);
+  if (lawSearchPlan?.skipped || !lawSearchPlan?.queries?.length) {
+    return internal;
+  }
+  if (lawSearchPlan.usedFallback && lawSearchPlan.error) {
+    return internal;
+  }
+
+  return canonicalizeSearchQueries([...lawSearchPlan.queries, ...internal]).slice(0, 8);
 }
 
 function buildWarnings(gemini, lawApi, laws) {
