@@ -1,4 +1,4 @@
-import { analyzeScenario, hydrateAnalysisWithLiveLaws } from "../../../lib/analyzer";
+import { analyzeScenario, buildEmergencySearchQueries, hydrateAnalysisWithLiveLaws } from "../../../lib/analyzer";
 import { summarizeWithGemini } from "../../../lib/gemini";
 import { fetchLawSearchBatch } from "../../../lib/lawApi";
 import { buildDataQuality, buildNextSteps } from "../../../lib/analysisMeta.js";
@@ -20,19 +20,20 @@ export async function POST(request) {
 
     const lawSearchPlan = buildInternalLawSearchPlan(analysis);
     const searchQueries = analysis.searchQueries;
-    const lawApi = await fetchLawSearchBatch(searchQueries);
+    const emergencyQueries = buildEmergencySearchQueries(analysis.conditions, searchQueries, scenario);
+    const lawApi = await fetchLawSearchBatch(searchQueries, { emergencyQueries });
     const plannedAnalysis = { ...analysis, searchQueries };
     const hydratedAnalysis = hydrateAnalysisWithLiveLaws(plannedAnalysis, lawApi, mode);
     hydratedAnalysis.searchQueries = alignSearchQueriesWithLaws(hydratedAnalysis.searchQueries, hydratedAnalysis.laws);
     const gemini = await summarizeWithGemini({ scenario, analysis: hydratedAnalysis, lawApi });
-    const integrations = buildIntegrations({ lawSearchPlan, gemini, lawApi });
+    const integrations = buildIntegrations({ lawSearchPlan, gemini, lawApi, laws: hydratedAnalysis.laws });
     const payload = {
       ...hydratedAnalysis,
       lawApi,
       lawSearchPlan,
       gemini,
       integrations,
-      warnings: buildWarnings(gemini),
+      warnings: buildWarnings(gemini, lawApi, hydratedAnalysis.laws),
       dataQuality: buildDataQuality({ ...hydratedAnalysis, integrations }),
       nextSteps: buildNextSteps({ ...hydratedAnalysis, integrations }, mode),
       runtime: {
@@ -47,17 +48,20 @@ export async function POST(request) {
   }
 }
 
-function buildIntegrations({ lawSearchPlan, gemini, lawApi }) {
+function buildIntegrations({ lawSearchPlan, gemini, lawApi, laws }) {
   const geminiConfigured = Boolean(process.env.GEMINI_API_KEY);
   const geminiPlanOk = Boolean(lawSearchPlan.queries?.length && !lawSearchPlan.usedFallback && !lawSearchPlan.error);
   const geminiSummaryOk = Boolean(gemini.text);
+  const lawApiKeyConfigured = Boolean(process.env.LAW_API_KEY);
+  const hasLawResults = Boolean(lawApi?.items?.length) || Boolean(laws?.length);
 
   return {
     geminiConfigured,
     gemini: geminiConfigured && (geminiPlanOk || geminiSummaryOk),
     geminiPlan: geminiPlanOk,
     geminiSummary: geminiSummaryOk,
-    lawApi: lawApi.enabled,
+    lawApi: lawApiKeyConfigured && hasLawResults,
+    lawApiConfigured: lawApiKeyConfigured,
   };
 }
 
@@ -78,8 +82,23 @@ function buildInternalLawSearchPlan(analysis) {
   };
 }
 
-function buildWarnings(gemini) {
+function buildWarnings(gemini, lawApi, laws) {
   const warnings = [];
+  const lawApiKeyConfigured = Boolean(process.env.LAW_API_KEY);
+
+  if (lawApiKeyConfigured && !lawApi?.items?.length && !(laws?.length)) {
+    warnings.push({
+      code: "law_api_empty",
+      message:
+        "법제처 API는 연결됐지만 검색 결과가 없습니다. 상황을 조금 더 구체적으로 적거나 잠시 후 다시 시도해 주세요.",
+    });
+  } else if (lawApiKeyConfigured && lawApi?.error && !(laws?.length)) {
+    warnings.push({
+      code: "law_api_error",
+      message: "법제처 검색 중 오류가 발생했습니다. 내부 규칙 후보만 표시될 수 있습니다.",
+    });
+  }
+
   if (gemini?.status === 429 || gemini?.retryable) {
     const label = gemini?.modelLabel || gemini?.modelsTried?.[0]?.replace("gemini-", "") || "flash-lite";
     warnings.push({
