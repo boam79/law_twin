@@ -1,9 +1,15 @@
 "use client";
 
-import { forwardRef, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import DataQualityBanner from "./components/DataQualityBanner";
+import RateLimitNotice from "./components/RateLimitNotice";
+import ResultTopbar from "./components/ResultTopbar";
+import UserActionGuide from "./components/UserActionGuide";
 import { sampleScenarios } from "../lib/lawData";
 import { CHECKLIST_DUE_HINTS, getHeatmapRowHint } from "../lib/analysisMeta.js";
 import { buildSafeLawGoKrUrl } from "../lib/security.js";
+
+const APP_VERSION = "0.5.9";
 
 const modes = [
   { id: "impact", label: "영향", hint: "어떤 법령이 걸리는지" },
@@ -309,31 +315,7 @@ export default function Home() {
       </aside>
 
       <section className="result-panel">
-        <header className="topbar">
-          <div>
-            <p className="eyebrow">v0.5.8</p>
-            <h2>{analysis ? `${analysis.labels.sector} · ${analysis.labels.region}` : "분석을 시작해 주세요"}</h2>
-            <p className="topbar-sub">
-              {analysis ? analysis.risk.priority : "왼쪽에 상황을 입력한 뒤 분석 실행을 누르면 법령 연관 히트맵이 표시됩니다."}
-            </p>
-          </div>
-          <div className="topbar-metrics">
-            <div className="status-strip">
-              <Metric value={analysis?.laws.length ?? 0} label="관련 법령" />
-              <Metric value={analysis?.risk.label ?? "-"} label="검토 강도" />
-              <Metric value={analysis?.checklist.length ?? 0} label="대응 항목" />
-            </div>
-            {analysis?.dataQuality?.laws ? (
-              <p className="topbar-lawapi-meta">
-                {analysis.dataQuality.laws.lawApiTotal > 0
-                  ? `법제처 검색 ${analysis.dataQuality.laws.lawApiTotal}건 · 화면 반영 ${analysis.dataQuality.laws.lawApiVerified}건`
-                  : analysis.integrations?.lawApiConfigured
-                    ? "법제처 키 연결됨 · 이번 분석 검색 결과 없음(내부 규칙 표시)"
-                    : "법제처 미연동 · 내부 규칙만 표시"}
-              </p>
-            ) : null}
-          </div>
-        </header>
+        <ResultTopbar analysis={analysis} version={APP_VERSION} />
 
         {error ? <div className="error-box">{error}</div> : null}
 
@@ -549,76 +531,6 @@ export default function Home() {
   );
 }
 
-function RateLimitNotice({ warnings, secondsLeft }) {
-  return (
-    <div className="rate-limit-notice" role="alert">
-      {warnings.map((warning) => (
-        <p key={warning.code}>{warning.message}</p>
-      ))}
-      {secondsLeft > 0 ? (
-        <p className="rate-limit-wait">
-          <strong>{secondsLeft}초</strong> 뒤에 「분석 실행」이 다시 활성화됩니다. 그동안 아래 법령·체크리스트는 그대로 참고하세요.
-        </p>
-      ) : null}
-    </div>
-  );
-}
-
-const UserActionGuide = forwardRef(function UserActionGuide({ steps, activeView, onGoTo }, ref) {
-  if (!steps?.length) return null;
-
-  return (
-    <section ref={ref} className="action-guide" aria-label="분석 결과 이용 안내">
-      <div className="action-guide-head">
-        <h3>이렇게 보세요</h3>
-        <p>법률 자문이 아니라, 검토 순서를 돕는 가이드입니다.</p>
-      </div>
-      <ol className="action-steps">
-        {steps.slice(0, 5).map((step) => (
-          <li key={step.id} className={step.tab && activeView === step.tab ? "current" : ""}>
-            <div className="action-step-body">
-              <strong>{step.title}</strong>
-              <p>{step.detail}</p>
-            </div>
-            {step.tab ? (
-              <button type="button" className="ghost-button" onClick={() => onGoTo(step.tab)}>
-                {activeView === step.tab ? "보는 중" : "열기"}
-              </button>
-            ) : null}
-          </li>
-        ))}
-      </ol>
-    </section>
-  );
-});
-
-function DataQualityBanner({ quality }) {
-  return (
-    <section className="data-quality-banner" aria-label="데이터 출처 안내">
-      <div className="dq-item">
-        <span className="dq-label">관련 법령</span>
-        <strong>{quality.laws.label}</strong>
-        {quality.laws.lawApiTotal > 0 ? (
-          <small>
-            법제처 {quality.laws.lawApiTotal}건 검색 · 화면 반영 {quality.laws.lawApiVerified}건
-          </small>
-        ) : (
-          <small>법제처 결과 없음 — 내부 규칙 후보만 표시될 수 있음</small>
-        )}
-      </div>
-      <div className="dq-item">
-        <span className="dq-label">지역·업무 표</span>
-        <strong>{quality.heatmap.label}</strong>
-      </div>
-      <div className="dq-item">
-        <span className="dq-label">체크리스트</span>
-        <strong>{quality.checklist.label}</strong>
-      </div>
-      {quality.searchQueries.mismatch ? <p className="dq-warn">{quality.searchQueries.note}</p> : null}
-    </section>
-  );
-}
-
 function ChecklistExplainer({ description }) {
   return (
     <div className="checklist-explainer">
@@ -727,15 +639,6 @@ function TabIntro({ title, body, wide = false }) {
     <div className={`tab-intro ${wide ? "tab-intro-wide" : ""}`}>
       <strong>{title}</strong>
       <p>{body}</p>
-    </div>
-  );
-}
-
-function Metric({ value, label }) {
-  return (
-    <div>
-      <span>{value}</span>
-      <small>{label}</small>
     </div>
   );
 }
