@@ -56,7 +56,7 @@
 
 | ID | 제안 | 상태 |
 |----|------|------|
-| E1 | `app/components/` 분리 | 대기 |
+| E1 | `app/components/` 분리 | **1차** v0.5.9 (Topbar·가이드·배너) |
 | E2 | dataQuality 상단 노출 | **완료** v0.5.5 |
 
 ### F. 보안·운영
@@ -105,6 +105,7 @@
 | E-6 | topicFallbacks 분리 | `lib/topicFallbacks.js`, 테스트 3건 | **완료** |
 | E-7 | PR `simulate:casual:ci` | pr-check 로컬 서버 23건 | **완료** |
 | E-8 | nextSteps 스크롤 (G1) | 분석 성공 시 「이렇게 보세요」 | **완료** |
+| E-9 | page 컴포넌트 1차 분리 (E1) | `app/components/*` 5파일 | **완료** |
 
 ## Project Status Board
 
@@ -120,7 +121,8 @@
 
 ## Current Status / Progress Tracking
 
-- **v0.5.8** (Executor): 분석 완료 시 「이렇게 보세요」(nextSteps)로 smooth 스크롤, `prefers-reduced-motion` 존중.
+- **v0.5.9** (Executor): `app/components/` — ResultTopbar, UserActionGuide, RateLimitNotice, DataQualityBanner, Metric (`page.js` ~930줄).
+- **v0.5.8**: nextSteps 스크롤.
 - **v0.5.7**: PR CI `simulate:casual:ci`, `LAW_TWIN_SIM_MODES`, `ANALYZE_RATE_LIMIT`.
 - **v0.5.6**: topicFallbacks, Gemini Planner.
 - 로컬: `npm test` 10/10, `simulate:casual:ci` 23/23 OK.
@@ -131,8 +133,8 @@
 - **사용자 확인 요청**: v0.5.6 배포 후 ① Planner off 동작 동일 ② (선택) `GEMINI_PLANNER_MODE=on` 시 검색어·법령 품질 ③ v0.5.5 UI 3가지(메타·산재·체크리스트).
 - **D3 완료 확인 요청**: PR CI green 후 GitHub Actions 로그에서 `simulate:casual:ci` 23건 통과 여부.
 - **G1 확인 요청**: 분석 실행 후 오른쪽 「이렇게 보세요」 블록이 화면에 보이도록 스크롤되는지.
-- **E1 1차 확인**: 분석 후 UI·topbar·가이드·데이터 품질 배너가 이전과 동일한지.
-- 다음 Executor 후보: E1 2차(히트맵·체크리스트), B2 로컬 audit CI.
+- **E1 2차 확인**: 3개 탭(연관·법령·지역) 히트맵·체크리스트·쉬운 설명이 이전과 동일한지.
+- 다음 Executor 후보: E1 3차(왼쪽 입력 폼), B2 로컬 audit CI.
 
 ## Lessons
 
