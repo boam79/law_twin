@@ -6,6 +6,7 @@ import { canonicalizeSearchQueries } from "../../../lib/lawSearchTerms";
 import { logAnalyzeEvent } from "../../../lib/analyzeLog.js";
 import {
   getGeminiPlannerMode,
+  isGeminiConfigured,
   readAnalyzeRequestBody,
   sanitizeClientErrorMessage,
   sanitizeIntegrationStatus,
@@ -73,7 +74,7 @@ export async function POST(request) {
 }
 
 function buildIntegrations({ lawSearchPlan, gemini, lawApi, laws }) {
-  const geminiConfigured = Boolean(process.env.GEMINI_API_KEY);
+  const geminiConfigured = isGeminiConfigured();
   const geminiPlanOk = Boolean(lawSearchPlan.queries?.length && !lawSearchPlan.usedFallback && !lawSearchPlan.error);
   const geminiSummaryOk = Boolean(gemini.text);
   const lawApiKeyConfigured = Boolean(process.env.LAW_API_KEY);
@@ -99,12 +100,12 @@ async function buildLawSearchPlan(scenario, analysis) {
     return buildInternalLawSearchPlan();
   }
 
-  if (!process.env.GEMINI_API_KEY) {
+  if (!isGeminiConfigured()) {
     return {
       enabled: false,
       configured: false,
       queries: [],
-      rationale: ["GEMINI_PLANNER_MODE=on 이지만 GEMINI_API_KEY가 없어 내부 검색어를 사용합니다."],
+      rationale: ["GEMINI_PLANNER_MODE=on 이지만 Gemini API 키가 없어 내부 검색어를 사용합니다."],
       error: null,
       usedFallback: true,
       skipped: true,
@@ -117,7 +118,7 @@ async function buildLawSearchPlan(scenario, analysis) {
 function buildInternalLawSearchPlan() {
   return {
     enabled: true,
-    configured: Boolean(process.env.GEMINI_API_KEY),
+    configured: isGeminiConfigured(),
     queries: [],
     rationale: ["Gemini 분당 한도 절약을 위해 내부 분석 검색어를 사용합니다."],
     error: null,
