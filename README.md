@@ -2,7 +2,7 @@
 
 AI 기반 법령 영향·관계 분석 웹 앱(MVP)입니다. 자연어 상황을 입력하면 관련 법령·연관 히트맵·검토 체크리스트·(선택) Gemini 요약을 제공합니다.
 
-**현재 버전:** `0.5.7` · **프로덕션:** [law-twin.vercel.app](https://law-twin.vercel.app)
+**현재 버전:** `0.5.8` · **프로덕션:** [law-twin.vercel.app](https://law-twin.vercel.app)
 
 ## 기술 스택
 

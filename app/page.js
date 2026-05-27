@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { forwardRef, useEffect, useMemo, useRef, useState } from "react";
 import { sampleScenarios } from "../lib/lawData";
 import { CHECKLIST_DUE_HINTS, getHeatmapRowHint } from "../lib/analysisMeta.js";
 import { buildSafeLawGoKrUrl } from "../lib/security.js";
@@ -55,6 +55,8 @@ export default function Home() {
   const [activeView, setActiveView] = useState("relation");
   const [cooldownUntil, setCooldownUntil] = useState(0);
   const [cooldownTick, setCooldownTick] = useState(0);
+  const actionGuideRef = useRef(null);
+  const scrollToActionGuideRef = useRef(false);
 
   const cooldownSecondsLeft = useMemo(() => {
     if (!cooldownUntil) return 0;
@@ -71,6 +73,18 @@ export default function Home() {
     }, 1000);
     return () => clearInterval(timer);
   }, [cooldownUntil]);
+
+  useEffect(() => {
+    if (!scrollToActionGuideRef.current || !analysis?.nextSteps?.length) return undefined;
+    scrollToActionGuideRef.current = false;
+    const timer = window.setTimeout(() => {
+      const node = actionGuideRef.current;
+      if (!node) return;
+      const behavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+      node.scrollIntoView({ behavior, block: "nearest" });
+    }, 80);
+    return () => window.clearTimeout(timer);
+  }, [analysis]);
 
   function applyRateLimitCooldown(payload) {
     const warning = payload?.warnings?.find((item) => item.code === "gemini_rate_limit");
@@ -109,6 +123,7 @@ export default function Home() {
         throw new Error(payload.error || `분석 API ${response.status}`);
       }
       const payload = await response.json();
+      scrollToActionGuideRef.current = Boolean(payload?.nextSteps?.length);
       setAnalysis(payload);
       applyRateLimitCooldown(payload);
     } catch (requestError) {
@@ -296,7 +311,7 @@ export default function Home() {
       <section className="result-panel">
         <header className="topbar">
           <div>
-            <p className="eyebrow">v0.5.7</p>
+            <p className="eyebrow">v0.5.8</p>
             <h2>{analysis ? `${analysis.labels.sector} · ${analysis.labels.region}` : "분석을 시작해 주세요"}</h2>
             <p className="topbar-sub">
               {analysis ? analysis.risk.priority : "왼쪽에 상황을 입력한 뒤 분석 실행을 누르면 법령 연관 히트맵이 표시됩니다."}
@@ -324,7 +339,14 @@ export default function Home() {
 
         {analysis?.warnings?.length ? <RateLimitNotice warnings={analysis.warnings} secondsLeft={cooldownSecondsLeft} /> : null}
 
-        {analysis ? <UserActionGuide steps={analysis.nextSteps} activeView={activeView} onGoTo={setActiveView} /> : null}
+        {analysis ? (
+          <UserActionGuide
+            ref={actionGuideRef}
+            steps={analysis.nextSteps}
+            activeView={activeView}
+            onGoTo={setActiveView}
+          />
+        ) : null}
 
         {analysis?.dataQuality ? <DataQualityBanner quality={analysis.dataQuality} /> : null}
 
@@ -542,11 +564,11 @@ function RateLimitNotice({ warnings, secondsLeft }) {
   );
 }
 
-function UserActionGuide({ steps, activeView, onGoTo }) {
+const UserActionGuide = forwardRef(function UserActionGuide({ steps, activeView, onGoTo }, ref) {
   if (!steps?.length) return null;
 
   return (
-    <section className="action-guide" aria-label="분석 결과 이용 안내">
+    <section ref={ref} className="action-guide" aria-label="분석 결과 이용 안내">
       <div className="action-guide-head">
         <h3>이렇게 보세요</h3>
         <p>법률 자문이 아니라, 검토 순서를 돕는 가이드입니다.</p>
@@ -568,7 +590,7 @@ function UserActionGuide({ steps, activeView, onGoTo }) {
       </ol>
     </section>
   );
-}
+});
 
 function DataQualityBanner({ quality }) {
   return (
