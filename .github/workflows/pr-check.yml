@@ -18,3 +18,27 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npm test
+      - name: Casual story simulate (local server)
+        env:
+          PORT: "3007"
+          SKIP_GEMINI_SUMMARY: "1"
+          GEMINI_PLANNER_MODE: "off"
+          ANALYZE_RATE_LIMIT: "120"
+          LAW_TWIN_BASE_URL: "http://127.0.0.1:3007"
+          LAW_TWIN_SIM_MODES: "impact"
+        run: |
+          npm run start &
+          SERVER_PID=$!
+          trap "kill $SERVER_PID 2>/dev/null || true" EXIT
+          for i in $(seq 1 45); do
+            if curl -sf "${LAW_TWIN_BASE_URL}/api/analyze" >/dev/null; then
+              echo "Server ready after ${i}s"
+              break
+            fi
+            if [ "$i" -eq 45 ]; then
+              echo "Server did not become ready"
+              exit 1
+            fi
+            sleep 1
+          done
+          npm run simulate:casual:ci

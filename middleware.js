@@ -35,7 +35,10 @@ export function middleware(request) {
 
   if (pathname === "/api/analyze" && request.method === "POST") {
     const ip = getClientIp(request);
-    const rate = checkRateLimit(`analyze:${ip}`, { limit: 24, windowMs: 60_000 });
+    const configuredLimit = Number.parseInt(process.env.ANALYZE_RATE_LIMIT || "24", 10);
+    const limit =
+      Number.isFinite(configuredLimit) && configuredLimit > 0 ? Math.min(configuredLimit, 500) : 24;
+    const rate = checkRateLimit(`analyze:${ip}`, { limit, windowMs: 60_000 });
     if (!rate.allowed) {
       const blocked = NextResponse.json({ error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." }, { status: 429 });
       blocked.headers.set("Retry-After", String(Math.max(1, Math.ceil((rate.resetAt - Date.now()) / 1000))));

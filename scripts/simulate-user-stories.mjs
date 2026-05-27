@@ -201,7 +201,8 @@ const casualStories = [
 ];
 
 const regions = ["서울", "경기", "부산", "전국"];
-const modes = ["impact", "conflict", "checklist"];
+const defaultModes = ["impact", "conflict", "checklist"];
+const modes = parseSimModes(process.env.LAW_TWIN_SIM_MODES);
 
 const options = parseOptions(process.argv.slice(2));
 const runCount = options.forever ? Number.POSITIVE_INFINITY : options.repeat;
@@ -236,6 +237,14 @@ for (let iteration = 1; iteration <= runCount; iteration += 1) {
   }
 
   console.log(JSON.stringify({ ok: true, baseUrl: options.baseUrl, iteration, count: stories.length, totalCount }));
+}
+
+function parseSimModes(raw) {
+  const configured = String(raw || "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter((item) => defaultModes.includes(item));
+  return configured.length ? configured : defaultModes;
 }
 
 function parseOptions(args) {

@@ -1,6 +1,6 @@
 {
   "name": "law-twin",
-  "version": "0.5.6",
+  "version": "0.5.7",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,6 +9,7 @@
     "start": "next start",
     "simulate": "node scripts/simulate-user-stories.mjs",
     "simulate:casual": "node scripts/simulate-user-stories.mjs --casual-only",
+    "simulate:casual:ci": "LAW_TWIN_SIM_MODES=impact node scripts/simulate-user-stories.mjs --casual-only",
     "audit:casual": "node scripts/audit-casual-stories.mjs",
     "test": "node --test tests/*.test.mjs",
     "lint": "next lint"

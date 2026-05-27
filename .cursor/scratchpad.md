@@ -50,7 +50,7 @@
 |----|------|------|
 | D1 | `lawSearchTerms`·`analyzeScenario` 단위 테스트 | **완료** `tests/*.test.mjs` |
 | D2 | PR: build + test | **완료** `.github/workflows/pr-check.yml` |
-| D3 | PR simulate:casual | 대기 |
+| D3 | PR simulate:casual | **완료** v0.5.7 pr-check |
 
 ### E. UI·구조
 
@@ -103,6 +103,7 @@
 | E-4 | pr-check.yml | build+test on PR | 완료 |
 | E-5 | topbar 법제처 메타 | UI 표시 | 완료 |
 | E-6 | topicFallbacks 분리 | `lib/topicFallbacks.js`, 테스트 3건 | **완료** |
+| E-7 | PR `simulate:casual:ci` | pr-check 로컬 서버 23건 | **완료** |
 
 ## Project Status Board
 
@@ -110,18 +111,21 @@
 - [x] E-1~E-5 (로드맵 1차)
 - [x] E-6 topicFallbacks 분리
 - [x] Gemini Planner 모드 구현 (C2)
+- [x] D3 PR simulate:casual (E-7)
 - [ ] 프로덕션 `audit:casual` strict 재확인
 
 ## Current Status / Progress Tracking
 
-- **v0.5.6** (Executor): `lib/topicFallbacks.js`, `GEMINI_PLANNER_MODE` + `getGeminiPlannerModelChain`, route 병합 검색어.
-- 로컬: `npm test` 10/10, `npm run build` 성공.
+- **v0.5.7** (Executor): PR CI에 `simulate:casual:ci`(impact 23건·로컬 서버), `LAW_TWIN_SIM_MODES`, `ANALYZE_RATE_LIMIT` env.
+- **v0.5.6**: topicFallbacks, Gemini Planner.
+- 로컬: `npm test` 10/10, `simulate:casual:ci` 23/23 OK.
 - 프로덕션 audit는 배포 후 `LAW_TWIN_BASE_URL=... npm run audit:casual` 로 확인 필요.
 
 ## Executor's Feedback or Assistance Requests
 
 - **사용자 확인 요청**: v0.5.6 배포 후 ① Planner off 동작 동일 ② (선택) `GEMINI_PLANNER_MODE=on` 시 검색어·법령 품질 ③ v0.5.5 UI 3가지(메타·산재·체크리스트).
-- 다음 Executor 후보: E1 page 컴포넌트 분리, D3 PR simulate:casual, B2 로컬 audit CI.
+- **D3 완료 확인 요청**: PR CI green 후 GitHub Actions 로그에서 `simulate:casual:ci` 23건 통과 여부.
+- 다음 Executor 후보: E1 page 컴포넌트 분리, B2 로컬 audit CI, G1 nextSteps 스크롤.
 
 ## Lessons
 
